@@ -5,7 +5,8 @@ import type { GeoJSONSource, Map as MLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { basemap, WORKER_URL } from "@/lib/basemap";
-import { addDays, fmt } from "@/lib/data";
+import { addDays, fmt, getJSON } from "@/lib/data";
+import { bbox, fuse, inPoly, LiveFile } from "@/lib/live";
 import { getIndex, getYear, PointsIndex, SNPP_BIT } from "@/lib/points";
 import Icon from "@/components/Icon";
 
@@ -20,7 +21,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
   const map = useRef<MLMap | null>(null);
   const [ready, setReady] = useState(false);
   const [idx, setIdx] = useState<PointsIndex | null>(null);
-  const [days, setDays] = useState<{ d0: number; n: number; all: number[]; lost: number[]; year: number; snpp: number } | null>(null);
+  const [days, setDays] = useState<{ d0: number; n: number; all: number[]; lost: number[]; year: number; snpp: number; liveFrom?: number } | null>(null);
   const [cur, setCur] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [snppOff, setSnppOff] = useState(false);
@@ -91,10 +92,42 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
         lost[d - d0] += s;
         feats.push({ type: "Feature" as const, geometry: { type: "Point" as const, coordinates: [p.lon[i] / ix.scale.lon, p.lat[i] / ix.scale.lat] }, properties: { d: d - d0, s } });
       }
-      setDays({ d0, n, all, lost, year: y, snpp: Math.round((Date.parse(SNPP_END) - Date.parse(ix.start)) / 864e5) - d0 });
+      const snpp = Math.round((Date.parse(SNPP_END) - Date.parse(ix.start)) / 864e5) - d0;
+      setDays({ d0, n, all, lost, year: y, snpp });
       const set = () => (map.current?.getSource("fires") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: feats });
       if (map.current?.getSource("fires")) set();
       else map.current?.once("load", () => setTimeout(set, 0));
+
+      // The saved record ends on its last processed day. Carry the season on to today (Pakistan time)
+      // with NASA FIRMS near-real-time fires, fused the same way and kept inside Pakistan's districts.
+      const startDay = Math.floor(Date.parse(ix.start) / 864e5);
+      const today = Math.floor((Date.now() + 5 * 3600e3) / 864e5) - startDay;
+      if (y !== year || today <= d1) return;
+      try {
+        const [r, dist] = await Promise.all([fetch("/api/live"), getJSON<GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon>>("districts.geojson")]);
+        const live = (await r.json()) as LiveFile;
+        if (!r.ok || live.error) return;
+        const polys = dist.features.map((f) => ({ g: f.geometry, b: bbox(f.geometry) }));
+        const inPak = (lat: number, lon: number) => polys.some(({ g, b }) => lon >= b[0] && lon <= b[2] && lat >= b[1] && lat <= b[3] && inPoly(lon, lat, g));
+        const byDay = new Map<number, LiveFile["fires"]>();
+        for (const f of live.fires) {
+          const d = Math.floor((f[2] * 60000 + 5 * 3600e3) / 864e5) - startDay;
+          if (d > d1 && d <= today) (byDay.get(d) ?? byDay.set(d, []).get(d)!).push(f);
+        }
+        const extra = today - d1;
+        const all2 = [...all, ...new Array(extra).fill(0)], lost2 = [...lost, ...new Array(extra).fill(0)];
+        for (const [d, fires] of byDay)
+          for (const e of fuse(fires)) {
+            if (!inPak(e.lat, e.lon)) continue;
+            all2[d - d0]++;
+            feats.push({ type: "Feature" as const, geometry: { type: "Point" as const, coordinates: [e.lon, e.lat] }, properties: { d: d - d0, s: 0 } });
+          }
+        setDays({ d0, n: n + extra, all: all2, lost: lost2, year: y, snpp, liveFrom: n });
+        setCur((c) => (c >= n - 1 ? n + extra - 1 : c));
+        if (map.current?.getSource("fires")) set();
+      } catch {
+        /* live feed unavailable: the time-lapse stops at the last saved day */
+      }
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (reduce) setCur(n - 1);
       else setPlaying(true);
@@ -194,6 +227,11 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
               {nice}
               {dark ? (
                 <span className="rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-semibold tracking-widest text-rose-300">SUOMI NPP DARK</span>
+              ) : null}
+              {days?.liveFrom !== undefined && cur >= days.liveFrom ? (
+                <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold tracking-widest text-emerald-300" title="Near-real-time fires from NASA FIRMS, not yet in the saved record">
+                  LIVE
+                </span>
               ) : null}
             </p>
             <div className="relative">
