@@ -339,7 +339,7 @@ export default function Dashboard() {
                 );
               })}
             </nav>
-            <div className="ml-auto flex items-center gap-3">
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2 sm:gap-3">
               {tab === "calendar" ? (
                 <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
                   <input type="checkbox" checked={withoutSnpp} onChange={() => setWithoutSnpp(!withoutSnpp)} className="h-4 w-4 accent-rose-500" />

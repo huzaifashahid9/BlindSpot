@@ -64,7 +64,7 @@ export default function BlindClock({ passes, region }: Props) {
         </div>
         <h3 className="font-semibold text-white">Blind Clock: when is {region.name} watched?</h3>
         <p className="mt-1 text-sm text-slate-400">
-          Coloured arcs are pass windows in Pakistan time, learned from when each satellite actually reported fires, with the drifting Terra and Aqua shown at this year's times. The red wedge is the longest
+          Coloured arcs are pass windows in Pakistan time, learned from when each satellite actually reported fires, with the drifting Terra and Aqua shown at this year&apos;s times. The red wedge is the longest
           stretch with no satellite overhead: a fire that starts and ends inside it is never recorded.
         </p>
         <ul className="mt-4 space-y-2">

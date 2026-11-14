@@ -155,13 +155,14 @@ export default function PlaceSearch({
         placeholder="Search any city, town or village"
         aria-label="Search a place in Pakistan"
         role="combobox"
+        aria-controls="place-search-list"
         aria-expanded={open}
         aria-autocomplete="list"
         className="w-full rounded-lg border border-slate-600 bg-slate-900 py-1.5 pl-8 pr-7 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-orange-400"
       />
       {busy ? <span className="absolute right-2 top-2.5 h-3 w-3 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" /> : null}
       {open && term.length >= 1 && (items.length || msg || empty || busy) ? (
-        <ul role="listbox" className="absolute left-0 top-full z-50 mt-1 max-h-96 w-80 overflow-auto rounded-xl border border-slate-700 bg-slate-950/95 shadow-2xl backdrop-blur [animation:fade-up_0.2s_ease_both]">
+        <ul id="place-search-list" role="listbox" className="absolute left-0 top-full z-50 mt-1 max-h-96 w-80 overflow-auto rounded-xl border border-slate-700 bg-slate-950/95 shadow-2xl backdrop-blur [animation:fade-up_0.2s_ease_both]">
           {items.map((it, i) => {
             const on = i === sel;
             const head = it.kind === "area" && i === 0 ? "Districts with full history" : it.kind === "place" && (i === 0 || items[i - 1].kind === "area") ? "Places" : null;

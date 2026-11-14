@@ -62,7 +62,6 @@ export default function BackToTop() {
       removeEventListener("scroll", onScroll);
       removeEventListener(EVENT, call);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function ride() {
