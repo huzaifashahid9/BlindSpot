@@ -29,6 +29,7 @@ const SeasonRace = dynamic(() => import("@/components/SeasonRace"), { ssr: false
 const Tour = dynamic(() => import("@/components/Tour"), { ssr: false });
 const Welcome = dynamic(() => import("@/components/Welcome"), { ssr: false });
 const PlaceSearch = dynamic(() => import("@/components/PlaceSearch"), { ssr: false });
+const Industry = dynamic(() => import("@/components/Industry"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
 const Live = dynamic(() => import("@/components/Live"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
 
 const TABS = [
@@ -38,6 +39,7 @@ const TABS = [
   { id: "lost", label: "Lost Eyes" },
   { id: "sim", label: "Simulator" },
   { id: "clock", label: "Blind Clock" },
+  { id: "industry", label: "Industrial heat" },
   { id: "area", label: "Area & export" },
   { id: "ask", label: "Ask AI" },
 ] as const;
@@ -51,6 +53,7 @@ const PLAIN: Record<Tab, string> = {
   lost: "One satellite, Suomi NPP, stopped on 2 November 2026. This shows the fires that only it saw, which we will now miss, and the districts that lose the most.",
   sim: "Turn satellites on and off like light switches, and see how many fires would go unseen without them.",
   clock: "Satellites pass over only at certain hours. This shows the hours when no satellite is watching, so a fire then can be missed completely.",
+  industry: "Some hot spots burn almost every day of the year, like brick kilns and gas flares. They are not crop fires, so we take them out of the fire record and show them here instead.",
   area: "Draw a circle anywhere on the map and download the fire data for it as a spreadsheet.",
   ask: "Ask a question in normal words, like: Which district burned the most last November? BlindSpot AI answers from this data and checks its numbers.",
 };
@@ -508,6 +511,16 @@ export default function Dashboard() {
             />
           ) : null}
           {tab === "clock" && passes && R ? <BlindClock passes={passes} region={R} /> : null}
+          {tab === "industry" && R && regions ? (
+            <Industry
+              region={R}
+              regions={regions.regions}
+              onPickRegion={(id) => {
+                setCustom(null);
+                setRegionId(id);
+              }}
+            />
+          ) : null}
           {tab === "area" && region && regions && cal ? (
             <AreaExport
               region={region}
