@@ -1,6 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { fmt, LostEyesFile, pct, Region, SAT_COLOR, SAT_LABEL, SATS } from "@/lib/data";
+
+const BlindSpotMap = dynamic(() => import("@/components/BlindSpotMap"), { ssr: false, loading: () => <div className="h-[480px] rounded-2xl bg-slate-900" /> });
 
 type Props = { le: LostEyesFile; region: Region; regions: Region[]; onPickRegion: (id: string) => void };
 
@@ -49,6 +52,13 @@ export default function LostEyes({ le, region, regions, onPickRegion }: Props) {
             That is why losing one satellite matters.
           </p>
         </div>
+      </section>
+
+      <section>
+        <p className="hud-label">The blind-spot map</p>
+        <h3 className="mb-1 font-display text-xl font-semibold text-white">Where Pakistan&apos;s fire record went blind on 2 November 2026</h3>
+        <p className="mb-3 text-sm text-slate-400">Each district coloured by the share of its fires that no satellite but Suomi NPP saw. Brighter = more of its fires now go unrecorded.</p>
+        <BlindSpotMap regions={regions} onPick={onPickRegion} />
       </section>
 
       <section>

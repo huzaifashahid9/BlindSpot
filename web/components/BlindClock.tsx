@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import NextPass from "@/components/NextPass";
 import { longestGap, minToHHMM, PassesFile, pktWindows, Region, SAT_COLOR, SAT_LABEL, SATS } from "@/lib/data";
 
 type Props = { passes: PassesFile; region: Region };
@@ -56,6 +57,9 @@ export default function BlindClock({ passes, region }: Props) {
         </text>
       </svg>
       <div>
+        <div className="mb-5">
+          <NextPass passes={passes} lon={lon} name={region.name} />
+        </div>
         <h3 className="font-semibold text-white">Blind Clock: when is {region.name} watched?</h3>
         <p className="mt-1 text-sm text-slate-400">
           Coloured arcs are pass windows in Pakistan time, learned from when each satellite actually reported fires. The red wedge is the longest

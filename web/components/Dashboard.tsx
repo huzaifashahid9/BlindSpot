@@ -10,6 +10,7 @@ import Calendar from "@/components/Calendar";
 import History from "@/components/History";
 import LostEyes from "@/components/LostEyes";
 import ExplainDay from "@/components/ExplainDay";
+import NextPass from "@/components/NextPass";
 import { addDays, CalendarFile, fmt, getJSON, HarmonizationFile, LostEyesFile, PassesFile, pct, Region, RegionsFile } from "@/lib/data";
 import { buildCalendar, getIndex, loadYears, lostEyesFor } from "@/lib/points";
 
@@ -51,6 +52,10 @@ export default function Dashboard() {
     getJSON<HarmonizationFile>("harmonization.json").then(setHarm).catch(() => null);
     const h = window.location.hash.replace("#", "");
     if (TABS.some((t) => t.id === h)) setTab(h as Tab);
+    // shareable links: ?r=<region id>&d=<YYYY-MM-DD>#<tab>
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("r")) setRegionId(q.get("r")!);
+    if (q.get("d") && /^\d{4}-\d{2}-\d{2}$/.test(q.get("d")!)) setDate(q.get("d"));
     const onHash = () => {
       const x = window.location.hash.replace("#", "");
       if (TABS.some((t) => t.id === x)) {
@@ -137,6 +142,15 @@ export default function Dashboard() {
     return { events: region.events_h ?? region.events ?? 0, unusual: region.unusual_days ?? 0, lost: region.unusual_days_lost ?? 0, only: region.only_snpp_share ?? 0, trust: region.trust_now };
   }, [custom, areaCal, areaLe, region]);
 
+  useEffect(() => {
+    const q = new URLSearchParams();
+    if (regionId !== "PAK") q.set("r", regionId);
+    if (date) q.set("d", date);
+    const qs = q.toString();
+    history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}#${tab}`);
+  }, [regionId, date, tab]);
+  const [copied, setCopied] = useState(false);
+
   const go = (t: Tab) => {
     setTab(t);
     history.replaceState(null, "", `#${t}`);
@@ -199,6 +213,17 @@ export default function Dashboard() {
                   Switch off Suomi NPP
                 </label>
               ) : null}
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(window.location.href).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                  });
+                }}
+                className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"
+              >
+                {copied ? "✓ Link copied" : "🔗 Share"}
+              </button>
               {!custom ? (
                 <a href={`/report?region=${regionId}`} target="_blank" rel="noopener" className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800">
                   ⤓ Report PDF
@@ -280,6 +305,11 @@ export default function Dashboard() {
                 </section>
               ) : null}
               {C ? <RawVsHarmonized cal={C} /> : null}
+            </div>
+          ) : null}
+          {tab === "live" && passes ? (
+            <div className="mb-6">
+              <NextPass passes={passes} lon={R?.lon ?? 70.5} name={R && R.level !== "country" ? R.name : "Pakistan"} />
             </div>
           ) : null}
           {tab === "live" && regions ? (
