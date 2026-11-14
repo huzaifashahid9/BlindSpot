@@ -18,6 +18,7 @@ import Icon from "@/components/Icon";
 const DayMap = dynamic(() => import("@/components/DayMap"), { ssr: false, loading: () => <div className="h-[420px] rounded-xl bg-slate-900" /> });
 const Hero = dynamic(() => import("@/components/Hero"), { ssr: false, loading: () => <div className="-mx-4 min-h-[86vh] md:mx-0" /> });
 
+const Simulator = dynamic(() => import("@/components/Simulator"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
 const Live = dynamic(() => import("@/components/Live"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
 
 const TABS = [
@@ -25,6 +26,7 @@ const TABS = [
   { id: "calendar", label: "Burning calendar" },
   { id: "history", label: "Fire history" },
   { id: "lost", label: "Lost Eyes" },
+  { id: "sim", label: "Simulator" },
   { id: "clock", label: "Blind Clock" },
   { id: "area", label: "Area & export" },
   { id: "ask", label: "Ask AI" },
@@ -330,6 +332,9 @@ export default function Dashboard() {
             />
           ) : null}
           {tab === "history" ? (C ? <History cal={C} harm={harm} regionName={R?.name ?? ""} /> : <div className="h-64 animate-pulse rounded-2xl bg-slate-900" />) : null}
+          {tab === "sim" && le && regions ? (
+            <Simulator region={custom ? null : region} regions={regions.regions} custom={custom} from={le.window.from} to={le.window.to} areaName={R?.name ?? "Pakistan"} />
+          ) : null}
           {tab === "lost" && leView && R && regions ? (
             <LostEyes
               le={leView}
