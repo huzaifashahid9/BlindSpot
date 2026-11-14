@@ -1,5 +1,5 @@
 import Link from "next/link";
-import BackToTop, { TopLink } from "@/components/BackToTop";
+import BackToTop from "@/components/BackToTop";
 
 const REPO = "https://github.com/huzaifashahid9/BlindSpot";
 const TEAM = [
@@ -122,12 +122,6 @@ export default function Footer() {
 
       <div className="mt-12 flex flex-col gap-3 border-t border-slate-800/80 pt-6 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
         <p>© 2026 Team Hexabytes. Fire data courtesy of NASA FIRMS. BlindSpot is a Space Apps project and is not endorsed by NASA.</p>
-        <TopLink className="inline-flex items-center gap-1.5 text-slate-400 transition hover:text-orange-300">
-          Back to top
-          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M12 19V5M6 11l6-6 6 6" />
-          </svg>
-        </TopLink>
       </div>
       <BackToTop />
     </footer>
