@@ -363,3 +363,23 @@ body {
   from { transform: translateX(0); }
   to { transform: translateX(200px); }
 }
+
+/* logo: the flame flickers gently, the satellite blinks */
+.logo-flame {
+  transform-origin: 32px 46px;
+  animation: logo-flicker 2.4s ease-in-out infinite;
+}
+@keyframes logo-flicker {
+  0%, 100% { transform: scale(1, 1); }
+  40% { transform: scale(0.96, 1.05); }
+  70% { transform: scale(1.03, 0.97); }
+}
+.logo-sat {
+  animation: logo-blink 3s steps(1) infinite;
+}
+@keyframes logo-blink {
+  0%, 80% { opacity: 1; }
+  85% { opacity: 0.15; }
+  90% { opacity: 1; }
+  95% { opacity: 0.15; }
+}

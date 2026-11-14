@@ -15,6 +15,7 @@ import { addDays, CalendarFile, fmt, getJSON, HarmonizationFile, LostEyesFile, P
 import { buildCalendar, getIndex, loadYears, lostEyesFor } from "@/lib/points";
 import Icon from "@/components/Icon";
 import Footer from "@/components/Footer";
+import Logo from "@/components/Logo";
 import { CountUp, Reveal } from "@/components/Motion";
 import type { TourStep } from "@/components/Tour";
 import Term from "@/components/Term";
@@ -263,8 +264,8 @@ export default function Dashboard() {
 
         <div id="explore" className="sticky top-0 z-30 -mx-4 scroll-mt-0 border-b border-slate-800/80 bg-[#05070d]/85 px-4 py-3 backdrop-blur-md">
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/" className="font-display text-lg font-bold tracking-tight text-white">
-              Blind<span className="text-orange-400">Spot</span>
+            <Link href="/" aria-label="BlindSpot home" className="group">
+              <Logo />
             </Link>
             <select
               id="region"

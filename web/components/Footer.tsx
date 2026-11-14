@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BackToTop from "@/components/BackToTop";
+import Logo from "@/components/Logo";
 
 const REPO = "https://github.com/huzaifashahid9/BlindSpot";
 const TEAM = [
@@ -39,9 +40,7 @@ export default function Footer() {
       <div className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-orange-500/60 to-transparent" />
       <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1.3fr_1.1fr]">
         <div>
-          <p className="font-display text-2xl font-bold tracking-tight text-white">
-            Blind<span className="text-orange-400">Spot</span>
-          </p>
+          <Logo size="text-2xl" mark="h-9 w-9" />
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-slate-400">
             One consistent fire record from five satellites for every district of Pakistan, and a measure of what the record lost when Suomi NPP went
             dark.

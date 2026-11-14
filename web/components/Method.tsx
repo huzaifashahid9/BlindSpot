@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fmt, getJSON, minToHHMM, pct } from "@/lib/data";
 import Icon from "@/components/Icon";
+import { LogoMark } from "@/components/Logo";
 
 type Validation = {
   detections: number;
@@ -34,7 +35,7 @@ export default function Method() {
   return (
     <article className="mx-auto max-w-3xl px-4 py-10 leading-relaxed text-slate-300 [&_h2]:mt-10 [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-white [&_td]:py-1 [&_td]:pr-4 [&_th]:pr-4 [&_th]:text-left [&_th]:font-normal [&_th]:text-slate-400">
       <Link href="/" className="text-sm text-orange-300">
-        <Icon name="back" /> Back to BlindSpot
+        <Icon name="back" /> Back to <LogoMark className="inline h-4 w-4 align-[-3px]" /> BlindSpot
       </Link>
       <h1 className="mt-4 text-3xl font-bold text-white">Method, validation and credits</h1>
       <p className="mt-2">
