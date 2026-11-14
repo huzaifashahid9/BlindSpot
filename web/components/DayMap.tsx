@@ -3,9 +3,10 @@
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MLMap, MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { basemap, WORKER_URL } from "@/lib/basemap";
 import { DayEvents, FireEvent, getJSON, SAT_COLOR, SAT_LABEL, toEvents } from "@/lib/data";
+import Icon from "@/components/Icon";
 
 const GIBS = (layer: string, date: string, level = 9, ext = "jpg") =>
   `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${date}/GoogleMapsCompatible_Level${level}/{z}/{y}/{x}.${ext}`;
@@ -17,9 +18,30 @@ const IMAGERY = [
   { id: "MODIS_Terra_CorrectedReflectance_TrueColor", label: "Terra MODIS true colour, that day" },
 ];
 
-type Props = { date: string; withoutSnpp: boolean; focus?: { lon: number; lat: number } | null };
+type Props = {
+  date: string;
+  withoutSnpp: boolean;
+  focus?: { lon: number; lat: number } | null;
+  /** district ids of the selected region; null means the whole country */
+  districtIds?: string[] | null;
+  areaName?: string;
+};
+type DistrictFC = GeoJSON.FeatureCollection<GeoJSON.Geometry, { id: string; name: string }>;
+const PAK_BOUNDS: [[number, number], [number, number]] = [[60.8, 23.6], [77.9, 37.1]];
 
-function toGeoJSON(events: FireEvent[], withoutSnpp: boolean) {
+function boundsOf(fc: DistrictFC, ids: Set<string>): [[number, number], [number, number]] | null {
+  let x0 = 180, y0 = 90, x1 = -180, y1 = -90;
+  const walk = (c: unknown): void => {
+    if (Array.isArray(c) && typeof c[0] === "number") {
+      const [x, y] = c as number[];
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    } else if (Array.isArray(c)) c.forEach(walk);
+  };
+  for (const f of fc.features) if (ids.has(f.properties.id) && "coordinates" in f.geometry) walk(f.geometry.coordinates);
+  return x0 < x1 ? [[x0, y0], [x1, y1]] : null;
+}
+
+function toGeoJSON(events: FireEvent[], withoutSnpp: boolean, inside: Set<string> | null) {
   return {
     type: "FeatureCollection" as const,
     features: events
@@ -30,6 +52,7 @@ function toGeoJSON(events: FireEvent[], withoutSnpp: boolean) {
         geometry: { type: "Point" as const, coordinates: [e.lon, e.lat] },
         properties: {
           i,
+          in: !inside || (e.district !== null && inside.has(e.district)) ? 1 : 0,
           frp: e.frp,
           persistent: e.persistent,
           kind: e.sats === "SNPP" ? "only_snpp" : e.sats.includes(",") ? "multi" : "single",
@@ -39,7 +62,7 @@ function toGeoJSON(events: FireEvent[], withoutSnpp: boolean) {
   };
 }
 
-export default function DayMap({ date, withoutSnpp, focus }: Props) {
+export default function DayMap({ date, withoutSnpp, focus, districtIds = null, areaName }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
   const [events, setEvents] = useState<FireEvent[]>([]);
@@ -47,6 +70,15 @@ export default function DayMap({ date, withoutSnpp, focus }: Props) {
   const [imagery, setImagery] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [districts, setDistricts] = useState<DistrictFC | null>(null);
+  const idKey = districtIds ? districtIds.join(",") : "";
+  // district names inside the selected region (events carry the district name)
+  const inside = useMemo(() => {
+    if (!districtIds || !districts) return null;
+    const ids = new Set(districtIds);
+    return new Set(districts.features.filter((f) => ids.has(f.properties.id)).map((f) => f.properties.name));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idKey, districts]);
 
   useEffect(() => {
     if (!box.current || map.current) return;
@@ -57,6 +89,8 @@ export default function DayMap({ date, withoutSnpp, focus }: Props) {
     m.on("load", () => {
       m.addSource("districts", { type: "geojson", data: "/data/districts.geojson" });
       m.addLayer({ id: "districts-line", type: "line", source: "districts", paint: { "line-color": "#475569", "line-width": 0.6 } });
+      m.addLayer({ id: "area-fill", type: "fill", source: "districts", filter: ["in", ["get", "id"], ["literal", []]], paint: { "fill-color": "#f97316", "fill-opacity": 0.06 } });
+      m.addLayer({ id: "area-line", type: "line", source: "districts", filter: ["in", ["get", "id"], ["literal", []]], paint: { "line-color": "#fb923c", "line-width": 1.6 } });
       m.addSource("events", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       m.addLayer({
         id: "events",
@@ -65,7 +99,7 @@ export default function DayMap({ date, withoutSnpp, focus }: Props) {
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["ln", ["+", 1, ["get", "frp"]]], 0, 2, 3, 4, 6, 9],
           "circle-color": ["get", "colour"],
-          "circle-opacity": ["case", ["==", ["get", "persistent"], 1], 0.25, 0.85],
+          "circle-opacity": ["*", ["case", ["==", ["get", "in"], 1], 1, 0.22], ["case", ["==", ["get", "persistent"], 1], 0.25, 0.85]],
           "circle-stroke-width": ["case", ["==", ["get", "kind"], "only_snpp"], 1, 0],
           "circle-stroke-color": "#fff",
         },
@@ -79,6 +113,10 @@ export default function DayMap({ date, withoutSnpp, focus }: Props) {
       setReady(true);
     });
     map.current = m;
+    fetch("/data/districts.geojson")
+      .then((r) => r.json())
+      .then(setDistricts)
+      .catch(() => setDistricts(null));
     return () => {
       m.remove();
       map.current = null;
@@ -100,8 +138,25 @@ export default function DayMap({ date, withoutSnpp, focus }: Props) {
     const m = map.current;
     if (!m || !ready) return;
     (window as unknown as { __bsEvents: FireEvent[] }).__bsEvents = events;
-    (m.getSource("events") as GeoJSONSource).setData(toGeoJSON(events, withoutSnpp));
-  }, [events, withoutSnpp, ready]);
+    (m.getSource("events") as GeoJSONSource).setData(toGeoJSON(events, withoutSnpp, inside));
+  }, [events, withoutSnpp, ready, inside]);
+
+  // follow the region picker: outline the region and fly to it, or back to the whole country
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    const filter = ["in", ["get", "id"], ["literal", districtIds ?? []]] as unknown as maplibregl.FilterSpecification;
+    m.setFilter("area-fill", filter);
+    m.setFilter("area-line", filter);
+    setPicked(null);
+    if (focus && !districtIds) {
+      m.flyTo({ center: [focus.lon, focus.lat], zoom: 7.5 });
+      return;
+    }
+    const b = districtIds && districts ? boundsOf(districts, new Set(districtIds)) : null;
+    m.fitBounds(b ?? PAK_BOUNDS, { padding: 40, maxZoom: 8.5, duration: 900 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idKey, districts, ready, focus?.lat, focus?.lon]);
 
   useEffect(() => {
     const m = map.current;
@@ -115,19 +170,22 @@ export default function DayMap({ date, withoutSnpp, focus }: Props) {
     }
   }, [imagery, date, ready]);
 
-  useEffect(() => {
-    if (focus && map.current) map.current.flyTo({ center: [focus.lon, focus.lat], zoom: 7.5 });
-  }, [focus]);
 
   const shown = withoutSnpp ? events.filter((e) => e.sats !== "SNPP") : events;
   const onlySnpp = events.filter((e) => e.sats === "SNPP").length;
+  const inArea = inside ? shown.filter((e) => e.district !== null && inside.has(e.district)).length : null;
 
   return (
     <div className="relative">
       <div className="mb-2 flex flex-wrap items-center gap-3 text-sm">
         <span className="font-semibold text-white">{date}</span>
+        {inArea !== null ? (
+          <span className="rounded bg-orange-500/15 px-1.5 py-0.5 text-orange-200">
+            {inArea.toLocaleString()} in {areaName ?? "the selected area"}
+          </span>
+        ) : null}
         <span className="text-slate-400">
-          {shown.length.toLocaleString()} events shown{withoutSnpp ? ` · ${onlySnpp.toLocaleString()} hidden (only Suomi NPP saw them)` : ` · ${onlySnpp.toLocaleString()} seen only by Suomi NPP`}
+          {shown.length.toLocaleString()} events in Pakistan{withoutSnpp ? ` · ${onlySnpp.toLocaleString()} hidden (only Suomi NPP saw them)` : ` · ${onlySnpp.toLocaleString()} seen only by Suomi NPP`}
         </span>
         <select className="ml-auto rounded bg-slate-800 px-2 py-1 text-xs text-slate-200" value={imagery} onChange={(e) => setImagery(e.target.value)} aria-label="Satellite imagery">
           <option value="">No satellite imagery</option>
@@ -156,7 +214,7 @@ export default function DayMap({ date, withoutSnpp, focus }: Props) {
           <div className="mb-2 flex items-start justify-between">
             <b className="text-white">Why this event looks like this</b>
             <button className="text-slate-400 hover:text-white" onClick={() => setPicked(null)} aria-label="Close">
-              ✕
+              <Icon name="close" />
             </button>
           </div>
           <dl className="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-300">

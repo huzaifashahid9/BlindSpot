@@ -6,6 +6,7 @@ import Calendar from "@/components/Calendar";
 import History from "@/components/History";
 import Outlook from "@/components/Outlook";
 import { addDays, CalendarFile, fmt, getJSON, HarmonizationFile, LostEyesFile, pct, Region, RegionsFile, SAT_LABEL, SATS } from "@/lib/data";
+import Icon from "@/components/Icon";
 
 /** One printable page per region: open /report?region=<id> and use "Save as PDF". */
 export default function Report() {
@@ -43,7 +44,7 @@ export default function Report() {
     <div className="report mx-auto max-w-5xl space-y-8 px-6 py-8">
       <div className="no-print flex items-center gap-3">
         <Link href="/" className="text-sm text-orange-300">
-          ← Back to BlindSpot
+          <Icon name="back" /> Back to BlindSpot
         </Link>
         <button onClick={() => window.print()} className="btn-primary ml-auto">
           Save as PDF / Print

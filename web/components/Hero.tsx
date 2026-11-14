@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { basemap, WORKER_URL } from "@/lib/basemap";
 import { addDays, fmt } from "@/lib/data";
 import { getIndex, getYear, PointsIndex, SNPP_BIT } from "@/lib/points";
+import Icon from "@/components/Icon";
 
 // The time-lapse plays the current rice-residue burning season, from 1 October to the latest day on record.
 const SNPP_END = "2026-11-02";
@@ -166,7 +167,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a href="#explore" className="btn-primary">
-              Open the burning calendar ↓
+              Open the burning calendar <Icon name="down" />
             </a>
             <a href="#ask" className="btn-ghost">
               Ask the data
@@ -186,7 +187,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
                 className="rounded-md border border-slate-700 px-2 py-0.5 font-mono text-xs text-slate-300 hover:bg-slate-800"
                 aria-label={playing ? "Pause time-lapse" : "Play time-lapse"}
               >
-                {playing ? "❚❚ pause" : "▶ play"}
+                {playing ? <><Icon name="pause" className="h-3 w-3" /> pause</> : <><Icon name="play" className="h-3 w-3" fill /> play</>}
               </button>
             </div>
             <p className="mt-1 flex items-center gap-2 font-mono text-2xl text-white">

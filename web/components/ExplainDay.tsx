@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Icon from "@/components/Icon";
 
 /** "Explain this day": a three-sentence AI briefing on one day, built only from the site's data. */
 export default function ExplainDay({ date, regionId, regionName }: { date: string; regionId: string; regionName: string }) {
@@ -41,13 +42,13 @@ export default function ExplainDay({ date, regionId, regionName }: { date: strin
   return (
     <div className="mb-3">
       <button onClick={run} disabled={busy} className="btn-ghost border-orange-400/50 py-1.5 text-sm">
-        {busy ? "Gemini is reading the data…" : `✨ Explain ${date} with AI`}
+        {busy ? "Gemini is reading the data…" : <><Icon name="spark" /> Explain {date} with AI</>}
       </button>
       {text ? (
         <div className="mt-2 rounded-xl border border-orange-400/30 bg-orange-500/5 p-3 text-sm leading-relaxed text-slate-200">
           {text}
           {checked !== undefined ? (
-            <p className="mt-1 text-xs text-slate-500">{checked ? "✓ every number checked against the data" : "⚠ some numbers could not be checked"}</p>
+            <p className="mt-1 text-xs text-slate-500">{checked ? <><Icon name="check" className="h-3.5 w-3.5 text-emerald-400" /> every number checked against the data</> : <><Icon name="alert" className="h-3.5 w-3.5 text-amber-400" /> some numbers could not be checked</>}</p>
           ) : null}
         </div>
       ) : null}

@@ -1,11 +1,12 @@
 // Ask BlindSpot: Gemini with function calling over the site's own static data.
 // The API key stays on the server (GEMINI_API_KEY); the browser never sees it.
-import { GoogleGenAI, type Content, type FunctionDeclaration } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel, type Content, type FunctionDeclaration } from "@google/genai";
 
 // 2.5 Flash with thinking switched off answers tool-calling questions fast and reliably.
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 // Tried in order when a model is missing (404) or overloaded (503 / UNAVAILABLE).
-const MODELS = [...new Set([MODEL, "gemini-2.5-flash", "gemini-2.5-flash-lite"])];
+// Google retires models for new keys without notice, so the chain spans two generations.
+const MODELS = [...new Set([MODEL, "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"])];
 const RETRYABLE = /404|NOT_FOUND|not found|not supported|503|UNAVAILABLE|overloaded|high demand|500|INTERNAL|504|DEADLINE|timed? ?out|aborted/i;
 const MAX_ROUNDS = 5;
 
@@ -222,7 +223,7 @@ export async function POST(req: Request) {
           tools: [{ functionDeclarations: tools }],
           temperature: 0.2,
           // no long "thinking" pass: the tools do the work, and it keeps each call well inside the deadline
-          ...(m.startsWith("gemini-2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+          ...(m.startsWith("gemini-2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : m.startsWith("gemini-3") ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } } : {}),
         });
         let res;
         for (let tries = 0; ; tries++) {
@@ -230,9 +231,11 @@ export async function POST(req: Request) {
             res = await ai.models.generateContent({ model: MODELS[mi], contents, config: configFor(MODELS[mi]) });
             break;
           } catch (e) {
-            if (!RETRYABLE.test(String(e)) || tries >= 4 || Date.now() - t0 > 40000) throw e;
+            if (!RETRYABLE.test(String(e)) || tries >= 6 || Date.now() - t0 > 40000) throw e;
             // first retry the same model after a short pause, then move down the list
-            if (tries % 2 === 1 && mi < MODELS.length - 1) mi++;
+            // a missing model will never come back: move on at once; a busy one gets one retry first
+            const gone = /404|NOT_FOUND|not found|no longer available|not supported/i.test(String(e));
+            if ((gone || tries % 2 === 1) && mi < MODELS.length - 1) mi++;
             await new Promise((r) => setTimeout(r, 600 * (tries + 1)));
           }
         }

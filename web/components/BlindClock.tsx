@@ -97,7 +97,7 @@ export default function BlindClock({ passes, region }: Props) {
               <span style={{ color: SAT_COLOR[s] }}>{SAT_LABEL[s]}</span> daytime pass over {region.name}:{" "}
               {passes.satellites[s].day_pass_by_year
                 .map((y) => `${y.year} ${minToHHMM((((y.lst_center_min - lon * 4 + 300) % 1440) + 1440) % 1440)}`)
-                .join(" → ")}
+                .join(", then ")}
             </li>
           ))}
         </ul>

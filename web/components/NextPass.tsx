@@ -52,7 +52,7 @@ export default function NextPass({ passes, lon, name }: { passes: PassesFile; lo
       <ul className="mt-2 flex flex-wrap gap-2 font-mono text-xs text-slate-400">
         {upcoming.slice(1, 5).map((w, i) => (
           <li key={i} className="rounded border border-slate-800 px-1.5 py-0.5">
-            <span style={{ color: SAT_COLOR[w.sat] }}>●</span> {minToHHMM(w.start)} {w.sat.replace("NOAA", "N-")}
+            <span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: SAT_COLOR[w.sat] }} /> {minToHHMM(w.start)} {w.sat.replace("NOAA", "N-")}
           </li>
         ))}
       </ul>

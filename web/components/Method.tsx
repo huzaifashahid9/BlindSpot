@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fmt, getJSON, minToHHMM, pct } from "@/lib/data";
+import Icon from "@/components/Icon";
 
 type Validation = {
   detections: number;
@@ -33,7 +34,7 @@ export default function Method() {
   return (
     <article className="mx-auto max-w-3xl px-4 py-10 leading-relaxed text-slate-300 [&_h2]:mt-10 [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-white [&_td]:py-1 [&_td]:pr-4 [&_th]:pr-4 [&_th]:text-left [&_th]:font-normal [&_th]:text-slate-400">
       <Link href="/" className="text-sm text-orange-300">
-        ← Back to BlindSpot
+        <Icon name="back" /> Back to BlindSpot
       </Link>
       <h1 className="mt-4 text-3xl font-bold text-white">Method, validation and credits</h1>
       <p className="mt-2">
@@ -170,7 +171,7 @@ export default function Method() {
       <ul className="list-disc pl-5">
         {Object.entries(v.pass_drift).map(([s, ys]) => (
           <li key={s}>
-            {s} daytime pass, mean local solar time: {ys.map((y) => `${y.year} ${minToHHMM(y.lst_center_min)}`).join(" → ")}
+            {s} daytime pass, mean local solar time: {ys.map((y) => `${y.year} ${minToHHMM(y.lst_center_min)}`).join(", then ")}
           </li>
         ))}
       </ul>

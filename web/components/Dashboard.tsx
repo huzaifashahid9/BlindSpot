@@ -13,6 +13,7 @@ import ExplainDay from "@/components/ExplainDay";
 import NextPass from "@/components/NextPass";
 import { addDays, CalendarFile, fmt, getJSON, HarmonizationFile, LostEyesFile, PassesFile, pct, Region, RegionsFile } from "@/lib/data";
 import { buildCalendar, getIndex, loadYears, lostEyesFor } from "@/lib/points";
+import Icon from "@/components/Icon";
 
 const DayMap = dynamic(() => import("@/components/DayMap"), { ssr: false, loading: () => <div className="h-[420px] rounded-xl bg-slate-900" /> });
 const Hero = dynamic(() => import("@/components/Hero"), { ssr: false, loading: () => <div className="-mx-4 min-h-[86vh] md:mx-0" /> });
@@ -124,7 +125,12 @@ export default function Dashboard() {
   const R = custom ? customRegion : region;
   const C = custom ? areaCal : cal;
   const leView: LostEyesFile | null = le && custom && areaLe ? { ...le, regions: { ...le.regions, custom: areaLe } } : le;
-  const focus = R && R.level === "district" && R.lon && R.lat ? { lon: R.lon, lat: R.lat } : null;
+  const focus = custom && R?.lon && R?.lat ? { lon: R.lon, lat: R.lat } : null;
+  const districtIds = useMemo(() => {
+    if (custom || !region || !regions || region.level === "country") return null;
+    if (region.level === "district") return [region.id];
+    return regions.regions.filter((r) => r.parent === region.id).map((r) => r.id);
+  }, [custom, region, regions]);
   const years = regions ? `${regions.data_from.slice(0, 4)} to ${regions.data_to.slice(0, 4)}` : "";
 
   const stats = useMemo(() => {
@@ -222,11 +228,11 @@ export default function Dashboard() {
                 }}
                 className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"
               >
-                {copied ? "✓ Link copied" : "🔗 Share"}
+                {copied ? <><Icon name="check" /> Link copied</> : <><Icon name="link" /> Share</>}
               </button>
               {!custom ? (
                 <a href={`/report?region=${regionId}`} target="_blank" rel="noopener" className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800">
-                  ⤓ Report PDF
+                  <Icon name="download" /> Report PDF
                 </a>
               ) : null}
               <Link href="/method" className="text-sm text-slate-400 hover:text-white">
@@ -301,10 +307,10 @@ export default function Dashboard() {
                   <p className="hud-label">02 · The day on the map</p>
                   <h2 className="mb-3 font-display text-2xl font-semibold text-white">Every fire, and which satellites saw it</h2>
                   {!custom && R ? <ExplainDay date={date} regionId={regionId} regionName={R.name} /> : null}
-                  <DayMap date={date} withoutSnpp={withoutSnpp} focus={focus} />
+                  <DayMap date={date} withoutSnpp={withoutSnpp} focus={focus} districtIds={districtIds} areaName={R?.name} />
                 </section>
               ) : null}
-              {C ? <RawVsHarmonized cal={C} /> : null}
+              {C ? <RawVsHarmonized key={custom ? "custom" : regionId} cal={C} regionName={R?.name ?? "Pakistan"} /> : null}
             </div>
           ) : null}
           {tab === "live" && passes ? (
@@ -383,7 +389,7 @@ function Stat({ label, value, sub, accent }: { label: string; value: string; sub
   );
 }
 
-function RawVsHarmonized({ cal }: { cal: CalendarFile }) {
+function RawVsHarmonized({ cal, regionName }: { cal: CalendarFile; regionName: string }) {
   // weekly totals: raw MODIS detections, raw VIIRS detections, harmonized events
   const weeks: { m: number; v: number; e: number; d: string }[] = [];
   for (let i = 0; i < cal.days; i += 7) {
@@ -396,32 +402,42 @@ function RawVsHarmonized({ cal }: { cal: CalendarFile }) {
     weeks.push({ m, v, e, d: addDays(cal.start, i) });
   }
   const max = Math.max(1, ...weeks.map((w) => w.v));
-  const W = 720, H = 160;
-  const line = (k: "m" | "v" | "e") => weeks.map((w, i) => `${i ? "L" : "M"}${(i / (weeks.length - 1)) * W},${H - (w[k] / max) * H}`).join(" ");
+  const W = 720, H = 160, L = 44;
+  const tot = weeks.reduce((a, w) => ({ m: a.m + w.m, v: a.v + w.v, e: a.e + w.e }), { m: 0, v: 0, e: 0 });
+  const ticks = [0, 0.5, 1].map((f) => Math.round(max * f));
+  const line = (k: "m" | "v" | "e") => weeks.map((w, i) => `${i ? "L" : "M"}${L + (i / (weeks.length - 1)) * (W - L)},${H - (w[k] / max) * H}`).join(" ");
   return (
     <section>
       <p className="hud-label">03 · Why harmonize</p>
-      <h2 className="mb-1 font-display text-2xl font-semibold text-white">Same fires, three different answers</h2>
+      <h2 className="mb-1 font-display text-2xl font-semibold text-white">Same fires, three different answers: {regionName}</h2>
       <p className="mb-3 text-sm text-slate-400">
         Weekly raw MODIS detections, raw VIIRS detections (three satellites, many duplicates), and BlindSpot&apos;s harmonized fire events. Without
         harmonization, &quot;how much burned?&quot; depends on which satellite you ask.
       </p>
-      <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
+      <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full" role="img" aria-label={`Weekly detections and fire events in ${regionName}`}>
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={L} x2={W} y1={H - (t / max) * H} y2={H - (t / max) * H} stroke="#1e293b" />
+            <text x={L - 6} y={Math.max(10, H - (t / max) * H + 4)} fontSize={10} fill="#64748b" textAnchor="end">
+              {fmt(t)}
+            </text>
+          </g>
+        ))}
         <path d={line("v")} fill="none" stroke="#a78bfa" strokeWidth={1.5} />
         <path d={line("e")} fill="none" stroke="#fb923c" strokeWidth={2.5} />
         <path d={line("m")} fill="none" stroke="#38bdf8" strokeWidth={1.5} />
         {weeks.map((w, i) =>
           w.d.slice(5, 7) === "01" && Number(w.d.slice(8)) <= 7 ? (
-            <text key={w.d} x={(i / (weeks.length - 1)) * W} y={H + 16} fontSize={11} fill="#64748b">
+            <text key={w.d} x={L + (i / (weeks.length - 1)) * (W - L)} y={H + 16} fontSize={11} fill="#64748b">
               {w.d.slice(0, 4)}
             </text>
           ) : null,
         )}
       </svg>
       <div className="mt-1 flex gap-4 text-xs text-slate-400">
-        <span className="text-violet-300">raw VIIRS detections</span>
-        <span className="text-sky-300">raw MODIS detections</span>
-        <span className="font-semibold text-orange-300">harmonized fire events</span>
+        <span className="text-violet-300">raw VIIRS detections ({fmt(tot.v)})</span>
+        <span className="text-sky-300">raw MODIS detections ({fmt(tot.m)})</span>
+        <span className="font-semibold text-orange-300">harmonized fire events ({fmt(Math.round(tot.e))})</span>
       </div>
     </section>
   );
