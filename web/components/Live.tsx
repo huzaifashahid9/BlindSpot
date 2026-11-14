@@ -4,7 +4,7 @@ import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { basemap, WORKER_URL } from "@/lib/basemap";
+import { addBasemapPicker, basemap, WORKER_URL } from "@/lib/basemap";
 import { fmt, getJSON, HarmonizationFile, Region, SAT_COLOR } from "@/lib/data";
 
 type LiveFile = { updated: string; sources: Record<string, { n: number; error?: string }>; fires: [number, number, number, number, number, string][]; error?: string };
@@ -144,6 +144,7 @@ export default function Live({ regions, onPickRegion }: Props) {
     maplibregl.setWorkerUrl(WORKER_URL);
     const m = new maplibregl.Map({ container: box.current, style: basemap("night"), center: [70.5, 30.2], zoom: 4.6, attributionControl: { compact: true } });
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    addBasemapPicker(m);
     m.on("load", () => {
       m.addSource("d", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       m.addLayer({

@@ -206,7 +206,7 @@ export async function POST(req: Request) {
   const question = String(body.question ?? "").slice(0, 600);
   if (!question.trim()) return Response.json({ error: "Empty question" }, { status: 400 });
   const origin = new URL(req.url).origin;
-  const ai = new GoogleGenAI({ apiKey: key, httpOptions: { timeout: 20000 } });
+  const ai = new GoogleGenAI({ apiKey: key, httpOptions: { timeout: 25000 } });
 
   const contents: Content[] = (body.history ?? []).slice(0, -1).map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.text }] }));
   contents.push({ role: "user", parts: [{ text: `${question}\n\n(The user is currently looking at region id: ${body.regionId ?? "PAK"})` }] });
@@ -223,7 +223,7 @@ export async function POST(req: Request) {
           tools: [{ functionDeclarations: tools }],
           temperature: 0.2,
           // no long "thinking" pass: the tools do the work, and it keeps each call well inside the deadline
-          ...(m.startsWith("gemini-2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : m.startsWith("gemini-3") ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } } : {}),
+          ...(m.startsWith("gemini-2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : m.startsWith("gemini-3") ? { thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL } } : {}),
         });
         let res;
         for (let tries = 0; ; tries++) {
@@ -231,10 +231,11 @@ export async function POST(req: Request) {
             res = await ai.models.generateContent({ model: MODELS[mi], contents, config: configFor(MODELS[mi]) });
             break;
           } catch (e) {
-            if (!RETRYABLE.test(String(e)) || tries >= 6 || Date.now() - t0 > 40000) throw e;
+            if (!RETRYABLE.test(String(e)) || tries >= 6 || Date.now() - t0 > 50000) throw e;
             // first retry the same model after a short pause, then move down the list
             // a missing model will never come back: move on at once; a busy one gets one retry first
-            const gone = /404|NOT_FOUND|not found|no longer available|not supported/i.test(String(e));
+            // a slow model (deadline) or a missing one: go straight to the next, faster model
+            const gone = /404|NOT_FOUND|not found|no longer available|not supported|504|DEADLINE|timed? ?out|aborted/i.test(String(e));
             if ((gone || tries % 2 === 1) && mi < MODELS.length - 1) mi++;
             await new Promise((r) => setTimeout(r, 600 * (tries + 1)));
           }

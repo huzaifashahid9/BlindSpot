@@ -4,7 +4,7 @@ import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MLMap, MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
-import { basemap, WORKER_URL } from "@/lib/basemap";
+import { addBasemapPicker, basemap, WORKER_URL } from "@/lib/basemap";
 import { fmt, getJSON, pct, Region } from "@/lib/data";
 
 type Props = { regions: Region[]; onPick: (id: string) => void };
@@ -25,6 +25,7 @@ export default function BlindSpotMap({ regions, onPick }: Props) {
     maplibregl.setWorkerUrl(WORKER_URL);
     const m = new maplibregl.Map({ container: box.current, style: basemap("dark"), center: [69.5, 30.2], zoom: 4.4, attributionControl: { compact: true } });
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    addBasemapPicker(m);
     const byId = new Map(regions.map((r) => [r.id, r]));
     m.on("load", async () => {
       const fc = await getJSON<GeoJSON.FeatureCollection<GeoJSON.Geometry, { id: string; name: string }>>("districts.geojson");

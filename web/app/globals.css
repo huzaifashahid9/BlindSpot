@@ -310,3 +310,13 @@ body {
     transform: scaleX(1);
   }
 }
+
+.bs-basemap select {
+  background: rgba(2, 6, 23, 0.9);
+  color: #e2e8f0;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid #334155;
+  cursor: pointer;
+}

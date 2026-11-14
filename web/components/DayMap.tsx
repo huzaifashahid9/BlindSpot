@@ -4,7 +4,7 @@ import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MLMap, MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { basemap, WORKER_URL } from "@/lib/basemap";
+import { basemap, GOOGLE_KINDS, googleAvailable, setGoogleBase, WORKER_URL } from "@/lib/basemap";
 import { DayEvents, FireEvent, getJSON, SAT_COLOR, SAT_LABEL, toEvents } from "@/lib/data";
 import Icon from "@/components/Icon";
 
@@ -71,6 +71,14 @@ export default function DayMap({ date, withoutSnpp, focus, districtIds = null, a
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [districts, setDistricts] = useState<DistrictFC | null>(null);
+  const [google, setGoogle] = useState(false);
+  useEffect(() => {
+    googleAvailable().then((ok) => {
+      setGoogle(ok);
+      // with a Google key, open on Google's dark map: city names and roads make the fires easy to place
+      if (ok) setImagery((v) => v || "g:dark");
+    });
+  }, []);
   const idKey = districtIds ? districtIds.join(",") : "";
   // district names inside the selected region (events carry the district name)
   const inside = useMemo(() => {
@@ -163,7 +171,8 @@ export default function DayMap({ date, withoutSnpp, focus, districtIds = null, a
     if (!m || !ready) return;
     if (m.getLayer("gibs")) m.removeLayer("gibs");
     if (m.getSource("gibs")) m.removeSource("gibs");
-    if (imagery) {
+    setGoogleBase(m, imagery.startsWith("g:") ? imagery.slice(2) : "");
+    if (imagery && !imagery.startsWith("g:")) {
       const l = IMAGERY.find((x) => x.id === imagery) as { fixedDate?: string; level?: number; ext?: string } | undefined;
       m.addSource("gibs", { type: "raster", tiles: [GIBS(imagery, l?.fixedDate ?? date, l?.level ?? 9, l?.ext ?? "jpg")], tileSize: 256, maxzoom: l?.level ?? 9, attribution: "Imagery: NASA GIBS" });
       m.addLayer({ id: "gibs", type: "raster", source: "gibs", paint: { "raster-opacity": 0.85 } }, "districts-line");
@@ -188,12 +197,23 @@ export default function DayMap({ date, withoutSnpp, focus, districtIds = null, a
           {shown.length.toLocaleString()} events in Pakistan{withoutSnpp ? ` · ${onlySnpp.toLocaleString()} hidden (only Suomi NPP saw them)` : ` · ${onlySnpp.toLocaleString()} seen only by Suomi NPP`}
         </span>
         <select className="ml-auto rounded bg-slate-800 px-2 py-1 text-xs text-slate-200" value={imagery} onChange={(e) => setImagery(e.target.value)} aria-label="Satellite imagery">
-          <option value="">No satellite imagery</option>
+          <option value="">Plain dark map</option>
+          {google ? (
+            <optgroup label="Google Maps">
+              {GOOGLE_KINDS.map((k) => (
+                <option key={k.id} value={`g:${k.id}`}>
+                  {k.label}
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
+          <optgroup label="NASA imagery">
           {IMAGERY.map((l) => (
             <option key={l.id} value={l.id}>
               {l.label} (NASA GIBS)
             </option>
           ))}
+          </optgroup>
         </select>
       </div>
       <div ref={box} className="h-[420px] w-full overflow-hidden rounded-lg border border-slate-800" />

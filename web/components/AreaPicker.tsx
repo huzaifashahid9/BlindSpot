@@ -4,7 +4,7 @@ import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef } from "react";
-import { basemap, WORKER_URL } from "@/lib/basemap";
+import { addBasemapPicker, basemap, WORKER_URL } from "@/lib/basemap";
 
 type Props = { lat: number; lon: number; km: number; onPick: (lat: number, lon: number) => void };
 
@@ -30,6 +30,7 @@ export default function AreaPicker({ lat, lon, km, onPick }: Props) {
     maplibregl.setWorkerUrl(WORKER_URL);
     const m = new maplibregl.Map({ container: box.current, style: basemap("dark"), center: [lon, lat], zoom: 5.2, attributionControl: { compact: true } });
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    addBasemapPicker(m);
     m.on("load", () => {
       m.addSource("districts", { type: "geojson", data: "/data/districts.geojson" });
       m.addLayer({ id: "districts-line", type: "line", source: "districts", paint: { "line-color": "#475569", "line-width": 0.6 } });
