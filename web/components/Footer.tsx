@@ -63,7 +63,7 @@ export default function Footer() {
             ))}
             <li>
               <Link href="/method" className="text-slate-400 transition hover:text-orange-300">
-                Method and validation
+                How it works
               </Link>
             </li>
           </ul>

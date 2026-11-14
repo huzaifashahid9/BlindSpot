@@ -239,6 +239,8 @@ export default function Dashboard() {
     { tab: "lost", target: "explore", title: "Lost Eyes", text: "Which fires only one satellite saw, month by month, by fire size, and which districts lose the most now that Suomi NPP is gone." },
     { tab: "history", target: "explore", title: "Season race and outlook", text: "Each season's running total races the previous ones, and a 14-day outlook says what this area's own history makes likely next." },
     { tab: "clock", target: "explore", title: "The Blind Clock", text: "The hours of the day when no satellite passes over, and a live countdown to the next pass for the selected district." },
+    { tab: "industry", target: "explore", title: "Industrial heat", text: "Some spots are hot almost every day of the year: brick kilns, gas flares and factories. BlindSpot keeps them out of the crop-fire record, maps them here, and flags the ones still burning in smog season." },
+    { tab: "area", target: "explore", title: "Your own area, as a spreadsheet", text: "Draw a circle anywhere in Pakistan, and every number is recounted for it. Download the fire events, the daily calendar or a monthly summary as CSV." },
     { tab: "live", target: "explore", title: "Live now", text: "Today's fires from NASA FIRMS, fused the same way, compared with each district's own history to raise alerts." },
     { tab: "ask", target: "explore", title: "Ask the data", text: "BlindSpot AI, an analyst that answers from the data with tools, and checks every number it says against the data before you see it." },
   ];
@@ -373,8 +375,8 @@ export default function Dashboard() {
               >
                 What is this?
               </button>
-              <Link href="/method" className="text-sm text-slate-400 hover:text-white">
-                Method
+              <Link href="/method" className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800">
+                <Icon name="info" /> How it works
               </Link>
             </div>
           </div>

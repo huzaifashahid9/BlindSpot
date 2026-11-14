@@ -12,6 +12,7 @@ const PATHS: Record<string, string> = {
   spark: "M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6",
   dot: "M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0",
   arrow: "M5 12h14M13 6l6 6-6 6",
+  info: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v6M12 7.5v.5",
 };
 
 export default function Icon({ name, className = "h-4 w-4", fill = false }: { name: keyof typeof PATHS | string; className?: string; fill?: boolean }) {

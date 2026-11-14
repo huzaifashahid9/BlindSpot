@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { addBasemapPicker, basemap, WORKER_URL } from "@/lib/basemap";
 import { fmt, getJSON, Region } from "@/lib/data";
 import Term from "@/components/Term";
+import SatelliteView from "@/components/SatelliteView";
 
 type Site = { lat: number; lon: number; days: number; months: number; first: number; last: number; years: number; frp: number; smog_last: number; smog_now: number; dist: number };
 type IndustryFile = { note: string; rule: { min_days: number; min_months: number }; season_last: number; season_now: number; last_year: number; districts: string[]; sites: Site[] };
@@ -19,6 +20,7 @@ export default function Industry({ region, regions, onPickRegion }: { region: Re
   const [data, setData] = useState<IndustryFile | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [pick, setPick] = useState<Site | null>(null);
+  const [sat, setSat] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -157,7 +159,7 @@ export default function Industry({ region, regions, onPickRegion }: { region: Re
             <p className="mt-1 text-slate-500">bigger = hot on more days · tap a dot</p>
           </div>
           {pick ? (
-            <div className="absolute bottom-12 right-3 w-72 rounded-xl border border-amber-400/50 bg-slate-950/95 p-4 text-sm shadow-2xl backdrop-blur [animation:fade-up_0.3s_ease_both]">
+            <div className="absolute bottom-9 right-3 max-h-[calc(100%-3rem)] w-72 overflow-y-auto rounded-xl border border-amber-400/50 bg-slate-950/95 p-4 text-sm shadow-2xl backdrop-blur [animation:fade-up_0.3s_ease_both]">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-amber-300">Year-round hot spot</p>
@@ -198,14 +200,18 @@ export default function Industry({ region, regions, onPickRegion }: { region: Re
                   <dd className="font-mono text-white">{pick.smog_last ? `hot on ${pick.smog_last} days` : "not detected"}</dd>
                 </div>
               </dl>
-              <a
-                href={`https://www.google.com/maps/@${pick.lat},${pick.lon},700m/data=!3m1!1e3`}
-                target="_blank"
-                rel="noopener noreferrer"
+              {sat ? (
+                <div className="mt-3">
+                  <SatelliteView key={`${pick.lat},${pick.lon}`} lat={pick.lat} lon={pick.lon} />
+                  <p className="mt-1 text-[11px] text-slate-500">Dashed square: the 1 km cell that stays hot. Zoom in to look for kilns, chimneys or flares.</p>
+                </div>
+              ) : null}
+              <button
+                onClick={() => setSat(!sat)}
                 className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-200 hover:border-amber-400 hover:text-white"
               >
-                See this spot on satellite imagery
-              </a>
+                {sat ? "Hide satellite view" : "See this spot on satellite imagery"}
+              </button>
             </div>
           ) : null}
         </div>
