@@ -3,11 +3,12 @@
 import { GoogleGenAI, ThinkingLevel, type Content, type FunctionDeclaration } from "@google/genai";
 
 // 2.5 Flash with thinking switched off answers tool-calling questions fast and reliably.
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 // Tried in order when a model is missing (404) or overloaded (503 / UNAVAILABLE).
 // Google retires models for new keys without notice, so the chain spans two generations.
-const MODELS = [...new Set([MODEL, "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"])];
-const RETRYABLE = /404|NOT_FOUND|not found|not supported|503|UNAVAILABLE|overloaded|high demand|500|INTERNAL|504|DEADLINE|timed? ?out|aborted/i;
+// Flash-Lite first: fastest, and the free tier gives it the most requests per minute and per day.
+const MODELS = [...new Set([MODEL, "gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-2.5-flash"])];
+const RETRYABLE = /429|RESOURCE_EXHAUSTED|quota|404|NOT_FOUND|not found|not supported|503|UNAVAILABLE|overloaded|high demand|500|INTERNAL|504|DEADLINE|timed? ?out|aborted/i;
 const MAX_ROUNDS = 5;
 
 // Gemini plus tool calls can take a while; the platform default may be shorter.
@@ -194,9 +195,29 @@ export async function GET() {
   return Response.json({ configured: Boolean(process.env.GEMINI_API_KEY), models: MODELS });
 }
 
+const EXPLAIN_CACHE = new Map<string, Json>();
+
+function thinkingFor(m: string) {
+  // no long "thinking" pass: the data does the work, and it keeps each call well inside the deadline
+  if (m.startsWith("gemini-2.5")) return { thinkingConfig: { thinkingBudget: 0 } };
+  if (m.startsWith("gemini-3")) return { thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL } };
+  return {};
+}
+
+/** The same briefing, written from the numbers without AI (used when Gemini is unavailable). */
+function plainBriefing(d: Json, name: string) {
+  const n = (v: unknown) => Number(v ?? 0).toLocaleString("en-US");
+  const p = d.percentile_vs_same_days_other_years as number | null;
+  const top = (d.top_districts as { name: string; events: number }[] | undefined) ?? [];
+  const s1 = `${name} recorded ${n(d.harmonized_events)} harmonized fire events on ${d.date}${p === null || p === undefined ? "" : p >= 100 ? ", more than on the same days in any other year on record" : `, more than ${p}% of the same days in other years`}${d.unusual ? ", which makes it an unusual day" : ""}.`;
+  const s2 = top.length ? `It burned most in ${top.slice(0, 3).map((t) => `${t.name} (${n(t.events)})`).join(", ")}.` : "";
+  const s3 = `${n(d.seen_only_by_suomi_npp)} fires were seen only by Suomi NPP, so a record without it would have missed them.`;
+  return [s1, s2, s3].filter(Boolean).join(" ");
+}
+
 export async function POST(req: Request) {
   const key = process.env.GEMINI_API_KEY;
-  if (!key) return Response.json({ error: "The assistant is not configured yet (GEMINI_API_KEY missing on the server)." }, { status: 503 });
+  if (!key) return Response.json({ error: "BlindSpot AI is not configured yet (GEMINI_API_KEY missing on the server)." }, { status: 503 });
   let body: { question?: string; regionId?: string; history?: { role: string; text: string }[] };
   try {
     body = await req.json();
@@ -207,6 +228,33 @@ export async function POST(req: Request) {
   if (!question.trim()) return Response.json({ error: "Empty question" }, { status: 400 });
   const origin = new URL(req.url).origin;
   const ai = new GoogleGenAI({ apiKey: key, httpOptions: { timeout: 25000 } });
+
+  // "Explain this day": look the day up first, then one Gemini call with no tools. If every model is
+  // busy or out of quota, answer with a plain briefing written from the same numbers.
+  const ex = (body as { explain?: { date?: string; regionId?: string; regionName?: string } }).explain;
+  if (ex?.date && /^\d{4}-\d{2}-\d{2}$/.test(ex.date)) {
+    const ck = `${ex.regionId ?? "PAK"}|${ex.date}`;
+    const hit = EXPLAIN_CACHE.get(ck);
+    if (hit) return Response.json(hit);
+    const d = await runTool(origin, "day_detail", { region_id: ex.regionId ?? "PAK", date: ex.date }).catch((e) => ({ error: String(e) }));
+    if ((d as Json).error) return Response.json({ answer: `No data for ${ex.date}: ${(d as Json).error}`, checked: false, tools: ["day_detail"] });
+    const dText = JSON.stringify(d);
+    const prompt = `Data for ${ex.date} in ${ex.regionName ?? ex.regionId} (JSON from BlindSpot):\n${dText}\n\nBrief an emergency manager in 3 short sentences: how unusual the day was compared with the same days in other years, where it burned most, and how many fires only Suomi NPP saw. Use only numbers from the JSON.`;
+    const t1 = Date.now();
+    for (let k = 0; k < MODELS.length && Date.now() - t1 < 45000; k++) {
+      try {
+        const res = await ai.models.generateContent({ model: MODELS[k], contents: [{ role: "user", parts: [{ text: prompt }] }], config: { systemInstruction: SYSTEM, temperature: 0.2, ...thinkingFor(MODELS[k]) } });
+        const answer = (res.text ?? "").trim();
+        if (!answer) continue;
+        const out = { answer, checked: numbersOk(answer, dText).length === 0, tools: ["day_detail"], model: MODELS[k] };
+        EXPLAIN_CACHE.set(ck, out);
+        return Response.json(out);
+      } catch (e) {
+        console.error("explain", MODELS[k], String(e).slice(0, 300));
+      }
+    }
+    return Response.json({ answer: plainBriefing(d as Json, ex.regionName ?? String(ex.regionId)), checked: true, tools: ["day_detail"], fallback: true });
+  }
 
   const contents: Content[] = (body.history ?? []).slice(0, -1).map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.text }] }));
   contents.push({ role: "user", parts: [{ text: `${question}\n\n(The user is currently looking at region id: ${body.regionId ?? "PAK"})` }] });
@@ -223,7 +271,7 @@ export async function POST(req: Request) {
           tools: [{ functionDeclarations: tools }],
           temperature: 0.2,
           // no long "thinking" pass: the tools do the work, and it keeps each call well inside the deadline
-          ...(m.startsWith("gemini-2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : m.startsWith("gemini-3") ? { thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL } } : {}),
+          ...thinkingFor(m),
         });
         let res;
         for (let tries = 0; ; tries++) {
@@ -235,7 +283,7 @@ export async function POST(req: Request) {
             // first retry the same model after a short pause, then move down the list
             // a missing model will never come back: move on at once; a busy one gets one retry first
             // a slow model (deadline) or a missing one: go straight to the next, faster model
-            const gone = /404|NOT_FOUND|not found|no longer available|not supported|504|DEADLINE|timed? ?out|aborted/i.test(String(e));
+            const gone = /429|RESOURCE_EXHAUSTED|quota|404|NOT_FOUND|not found|no longer available|not supported|504|DEADLINE|timed? ?out|aborted/i.test(String(e));
             if ((gone || tries % 2 === 1) && mi < MODELS.length - 1) mi++;
             await new Promise((r) => setTimeout(r, 600 * (tries + 1)));
           }
@@ -271,7 +319,7 @@ export async function POST(req: Request) {
     const busy = /503|UNAVAILABLE|overloaded|high demand|504|DEADLINE/i.test(msg);
     return Response.json(
       {
-        error: limited ? "The assistant is busy (rate limit). Try again in a minute." : busy ? "Gemini is overloaded right now. Try again in a few seconds." : "The assistant failed to answer. Try again.",
+        error: limited ? "BlindSpot AI is busy right now. Try again in a minute." : busy ? "BlindSpot AI is busy right now. Try again in a few seconds." : "BlindSpot AI could not answer that. Try again.",
         detail: `${MODELS[mi]}: ${msg.slice(0, 220)}`,
       },
       { status: limited ? 429 : busy ? 503 : 500 },

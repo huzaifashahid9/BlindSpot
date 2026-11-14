@@ -36,7 +36,7 @@ export default function Ask({ regionId }: { regionId: string }) {
       } catch {
         data = { error: `The assistant returned an unexpected response (HTTP ${res.status}).`, detail: raw.slice(0, 160) };
       }
-      const reply = data.answer ?? [data.error, data.detail].filter(Boolean).join("\n") ?? "No answer.";
+      const reply = data.answer ?? data.error ?? "No answer.";
       setMsgs([...next, { role: "assistant", text: reply || "No answer.", checked: data.checked, tools: data.tools }]);
     } catch (e) {
       setMsgs([...next, { role: "assistant", text: `Could not reach the assistant (${String(e).slice(0, 120)}). Try again in a moment.` }]);
@@ -48,7 +48,7 @@ export default function Ask({ regionId }: { regionId: string }) {
   return (
     <div className="mx-auto max-w-3xl">
       <p className="text-sm text-slate-400">
-        Ask BlindSpot answers from this site&apos;s own NASA data through function calls to Gemini. Every number in a reply is checked against the data
+        BlindSpot AI answers from this site&apos;s own NASA data, looking every figure up with its own data tools. Every number in a reply is checked against the data
         the tools returned before you see it. Ask in English or Urdu.
       </p>
       <div className="mt-4 space-y-3">

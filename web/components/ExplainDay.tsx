@@ -21,7 +21,7 @@ export default function ExplainDay({ date, regionId, regionName }: { date: strin
       const r = await fetch("/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q, regionId, history: [{ role: "user", text: q }] }),
+        body: JSON.stringify({ question: q, regionId, history: [{ role: "user", text: q }], explain: { date, regionId, regionName } }),
       });
       const raw = await r.text();
       let j: { answer?: string; error?: string; detail?: string; checked?: boolean } = {};
@@ -30,7 +30,7 @@ export default function ExplainDay({ date, regionId, regionName }: { date: strin
       } catch {
         j = { error: `Unexpected response (HTTP ${r.status}).` };
       }
-      setText(j.answer ?? ([j.error, j.detail].filter(Boolean).join(" ") || "No answer."));
+      setText(j.answer ?? (j.error || "No answer."));
       setChecked(j.checked);
     } catch (e) {
       setText(`Could not reach the assistant (${String(e).slice(0, 80)}).`);
@@ -42,7 +42,7 @@ export default function ExplainDay({ date, regionId, regionName }: { date: strin
   return (
     <div className="mb-3">
       <button onClick={run} disabled={busy} className="btn-ghost border-orange-400/50 py-1.5 text-sm">
-        {busy ? "Gemini is reading the data…" : <><Icon name="spark" /> Explain {date} with AI</>}
+        {busy ? "BlindSpot AI is reading the data…" : <><Icon name="spark" /> Explain {date} with AI</>}
       </button>
       {text ? (
         <div className="mt-2 rounded-xl border border-orange-400/30 bg-orange-500/5 p-3 text-sm leading-relaxed text-slate-200">

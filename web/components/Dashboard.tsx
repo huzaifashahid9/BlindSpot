@@ -205,7 +205,7 @@ export default function Dashboard() {
     { tab: "history", target: "explore", title: "Season race and outlook", text: "Each season's running total races the previous ones, and a 14-day outlook says what this area's own history makes likely next." },
     { tab: "clock", target: "explore", title: "The Blind Clock", text: "The hours of the day when no satellite passes over, and a live countdown to the next pass for the selected district." },
     { tab: "live", target: "explore", title: "Live now", text: "Today's fires from NASA FIRMS, fused the same way, compared with each district's own history to raise alerts." },
-    { tab: "ask", target: "explore", title: "Ask the data", text: "An AI analyst on Gemini that answers from the data with tools, and checks every number it says against the data before you see it." },
+    { tab: "ask", target: "explore", title: "Ask the data", text: "BlindSpot AI, an analyst that answers from the data with tools, and checks every number it says against the data before you see it." },
   ];
   const onTourStep = (st: TourStep) => {
     go(st.tab as Tab);
