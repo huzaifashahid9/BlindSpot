@@ -15,7 +15,10 @@ import { buildCalendar, getIndex, loadYears, lostEyesFor } from "@/lib/points";
 const DayMap = dynamic(() => import("@/components/DayMap"), { ssr: false, loading: () => <div className="h-[420px] rounded-xl bg-slate-900" /> });
 const Hero = dynamic(() => import("@/components/Hero"), { ssr: false, loading: () => <div className="-mx-4 min-h-[86vh] md:mx-0" /> });
 
+const Live = dynamic(() => import("@/components/Live"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
+
 const TABS = [
+  { id: "live", label: "Live now" },
   { id: "calendar", label: "Burning calendar" },
   { id: "history", label: "Fire history" },
   { id: "lost", label: "Lost Eyes" },
@@ -179,7 +182,11 @@ export default function Dashboard() {
                   onClick={() => go(t.id)}
                   className={`rounded-lg px-3 py-1.5 text-sm transition ${tab === t.id ? "bg-orange-500 font-semibold text-black" : "text-slate-300 hover:bg-slate-800"}`}
                 >
-                  <span className={`mr-1.5 font-mono text-[10px] ${tab === t.id ? "text-black/60" : "text-slate-500"}`}>0{i + 1}</span>
+                  {t.id === "live" ? (
+                    <span className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-red-500 align-middle" />
+                  ) : (
+                    <span className={`mr-1.5 font-mono text-[10px] ${tab === t.id ? "text-black/60" : "text-slate-500"}`}>0{i}</span>
+                  )}
                   {t.label}
                 </button>
               ))}
@@ -267,6 +274,17 @@ export default function Dashboard() {
               ) : null}
               {C ? <RawVsHarmonized cal={C} /> : null}
             </div>
+          ) : null}
+          {tab === "live" && regions ? (
+            <Live
+              regions={regions.regions}
+              onPickRegion={(id) => {
+                setCustom(null);
+                setRegionId(id);
+                go("calendar");
+                document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" });
+              }}
+            />
           ) : null}
           {tab === "history" ? (C ? <History cal={C} harm={harm} regionName={R?.name ?? ""} /> : <div className="h-64 animate-pulse rounded-2xl bg-slate-900" />) : null}
           {tab === "lost" && leView && R && regions ? (

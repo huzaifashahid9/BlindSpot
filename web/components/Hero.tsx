@@ -166,7 +166,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
         <div className="grid max-w-3xl gap-3 sm:grid-cols-[1.2fr_1fr]">
           <div className="hud-card bg-slate-950/70 p-4 backdrop-blur">
             <div className="flex items-center justify-between">
-              <p className="hud-label">Rice-residue season, Pakistan</p>
+              <p className="hud-label">Rice season 2025 · last one all 5 satellites watched</p>
               <button
                 onClick={() => {
                   if (days && cur >= days.n - 1) setCur(0);

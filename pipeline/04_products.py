@@ -114,6 +114,7 @@ def critical_weeks(series: pd.Series):
 
 def build_calendars(ev, det, regions, all_days, const_runs):
     out_index = {}
+    baselines = {}
     ev_ok = ev[~ev.persistent]
     det_ok = det[~det.dup]
     for reg, mask in region_masks(ev_ok, regions):
@@ -168,9 +169,22 @@ def build_calendars(ev, det, regions, all_days, const_runs):
             "baseline_note": "Unusual = harmonized fire events above the 90th percentile of the same +-7 days in the other years on record, and above the region's median burning day (3+ events).",
         }
         write_json(f"calendar/{reg['id']}.json", obj)
+        # day-of-year baseline (harmonized events, +-7 days, all years) for the live view and the outlook
+        v = cal.events_h.to_numpy()
+        doys = cal.index.dayofyear.to_numpy()
+        med, p90 = [], []
+        for d in range(1, 367):
+            dd = np.abs(doys - d)
+            base = v[np.minimum(dd, 366 - dd) <= DOY_WINDOW]
+            med.append(r(float(np.median(base)), 1) if len(base) else 0)
+            p90.append(r(float(np.percentile(base, 90)), 1) if len(base) else 0)
+        baselines[reg["id"]] = {"median": med, "p90": p90}
         out_index[reg["id"]] = {"events": int(cal.events.sum()), "events_h": r(cal.events_h.sum(), 0), "frp": r(cal.frp.sum(), 0),
                                 "unusual_days": int(cal.unusual.sum()),
                                 "unusual_days_lost": int((cal.unusual & ~cal.unusual_no_snpp).sum())}
+    years = sorted(set(all_days.year))
+    write_json("baseline.json", {"note": "Per region and day of year (1-366): median and 90th percentile of daily harmonized fire events over +-7 days in all years on record.",
+                                 "years": [int(years[0]), int(years[-1])], "regions": baselines})
     return out_index
 
 
