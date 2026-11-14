@@ -474,10 +474,10 @@ export default function Dashboard() {
               le={leView}
               region={R}
               regions={regions.regions}
-              onPickRegion={(id) => {
+              onPickRegion={(id, scroll = true) => {
                 setCustom(null);
                 setRegionId(id);
-                document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" });
+                if (scroll) document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" });
               }}
             />
           ) : null}

@@ -91,7 +91,7 @@ export default function History({ cal, harm, regionName, outlook = true }: Props
     <div className="space-y-8">
       {outlook ? <Outlook cal={cal} regionName={regionName} /> : null}
       <section className="grid gap-4 md:grid-cols-3">
-        <div className="hud-card md:col-span-2 p-5">
+        <div className="hud-card min-w-0 md:col-span-2 p-5">
           <p className="hud-label">
             {MONTHS[data.lm]} 1 to {data.ld}, {data.ly} · {regionName}
           </p>
@@ -107,17 +107,18 @@ export default function History({ cal, harm, regionName, outlook = true }: Props
             </b>
             .
           </p>
-          <div className="mt-4 flex items-end gap-1.5">
-            {[...data.past, { y: data.ly, v: data.now }].map((p) => {
+          <div className="mt-4 flex w-full items-end gap-[3px] sm:gap-1">
+            {[...data.past, { y: data.ly, v: data.now }].map((p, i, all) => {
               const mx = Math.max(1, data.now, ...data.past.map((x) => x.v));
+              const showLabel = all.length <= 14 || i % 2 === all.length % 2 || i === all.length - 1;
               return (
-                <div key={p.y} className="flex flex-col items-center gap-1">
+                <div key={p.y} className="flex min-w-0 max-w-8 flex-1 flex-col items-center gap-1">
                   <div
-                    className="w-8 rounded-t"
+                    className="w-full rounded-t"
                     style={{ height: `${Math.max(2, (p.v / mx) * 80)}px`, background: p.y === data.ly ? "#f97316" : "#475569" }}
                     title={`${p.y}: ${fmt(Math.round(p.v))}`}
                   />
-                  <span className="font-mono text-[10px] text-slate-500">{String(p.y).slice(2)}</span>
+                  <span className={`font-mono text-[10px] text-slate-500 ${showLabel ? "" : "invisible sm:visible"}`}>{String(p.y).slice(2)}</span>
                 </div>
               );
             })}

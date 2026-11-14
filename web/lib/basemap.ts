@@ -71,7 +71,7 @@ export function setGoogleBase(m: MapLike, kind: string) {
 }
 
 /** A small MapLibre control: a basemap picker with the Google options. Adds itself only when the server has a key. */
-export function addBasemapPicker(m: MLMap) {
+export function addBasemapPicker(m: MLMap, initial = "dark") {
   googleAvailable().then((ok) => {
     if (!ok) return;
     const ctl: IControl & { el: HTMLDivElement | null } = {
@@ -81,17 +81,21 @@ export function addBasemapPicker(m: MLMap) {
         el.className = "maplibregl-ctrl maplibregl-ctrl-group bs-basemap";
         const sel = document.createElement("select");
         sel.setAttribute("aria-label", "Basemap");
-        [["", "Basemap: default"], ...GOOGLE_KINDS.map((k) => [k.id, k.label])].forEach(([v, l]) => {
+        const opts: [string, string][] = [...GOOGLE_KINDS.map((k): [string, string] => [k.id, k.label]), ["", "Esri and NASA (no Google)"]];
+        opts.forEach(([v, l]) => {
           const o = document.createElement("option");
           o.value = v;
           o.textContent = l;
           sel.appendChild(o);
         });
-        sel.onchange = () => {
+        sel.value = initial;
+        const apply = () => {
           const go = () => setGoogleBase(m, sel.value);
           if (m.isStyleLoaded()) go();
           else m.once("load", go);
         };
+        sel.onchange = apply;
+        if (initial) apply();
         el.appendChild(sel);
         this.el = el;
         return el;

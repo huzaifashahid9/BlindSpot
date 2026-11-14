@@ -320,3 +320,31 @@ body {
   border: 1px solid #334155;
   cursor: pointer;
 }
+
+/* name tag over the district the blind-spot map flew to */
+.bs-map-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 146, 60, 0.7);
+  background: rgba(2, 6, 23, 0.9);
+  color: #fff;
+  font: 600 13px/1.2 var(--font-sans);
+  white-space: nowrap;
+  box-shadow: 0 0 24px -6px rgba(251, 146, 60, 0.9);
+  animation: fade-up 0.45s ease both;
+  pointer-events: none;
+}
+.bs-map-label span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #fb923c;
+  box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.8);
+  animation: bs-ping 1.6s ease-out infinite;
+}
+@keyframes bs-ping {
+  to { box-shadow: 0 0 0 10px rgba(251, 146, 60, 0); }
+}

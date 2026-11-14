@@ -6,10 +6,10 @@ import Icon from "@/components/Icon";
 type Msg = { role: "user" | "assistant"; text: string; checked?: boolean; tools?: string[] };
 
 const EXAMPLES = [
+  "Which district burned the most in November 2025?",
   "How much of Pakistan's fire record did we lose when Suomi NPP stopped?",
   "When was the rice-residue burning season in Sheikhupura in 2025, and how did it compare with 2024?",
   "Which Punjab districts lose the most fires without Suomi NPP?",
-  "لاہور میں نومبر 2025 میں کتنی آگ لگی؟",
 ];
 
 export default function Ask({ regionId }: { regionId: string }) {

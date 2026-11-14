@@ -130,7 +130,7 @@ export default function Outlook({ cal, regionName }: { cal: CalendarFile; region
         <polygon points={band} fill="#f97316" opacity={0.12} />
         <path d={medLine} fill="none" stroke="#fb923c" strokeWidth={1.5} strokeDasharray="4 3" />
         <path d={pts.join(" ")} fill="none" stroke="#fff" strokeWidth={2} />
-        <rect x={X(o.today)} y={0} width={X(o.today + HORIZON) - X(o.today)} height={H} fill="#22d3ee" opacity={0.12} />
+        <rect x={X(Math.max(1, o.today - 2))} y={0} width={X(o.today + HORIZON) - X(Math.max(1, o.today - 2))} height={H} fill="#22d3ee" opacity={0.12} />
         <line x1={X(o.today)} x2={X(o.today)} y1={0} y2={H} stroke="#22d3ee" strokeWidth={1.5} />
         <text x={X(o.today) + 4} y={12} fontSize={11} fill="#67e8f9">
           today
@@ -153,7 +153,7 @@ export default function Outlook({ cal, regionName }: { cal: CalendarFile; region
           <span className="mr-1 inline-block h-0.5 w-5 bg-white align-middle" /> {o.ly} so far (7-day mean)
         </span>
         <span>
-          <span className="mr-1 inline-block h-2.5 w-5 bg-cyan-400/20 align-middle" /> next 14 days
+          <span className="mr-1 inline-block h-2.5 w-5 bg-cyan-400/20 align-middle" /> today and the next 14 days
         </span>
       </div>
       <p className="mt-2 text-xs text-slate-500">
