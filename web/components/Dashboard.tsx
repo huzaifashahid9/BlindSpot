@@ -9,6 +9,7 @@ import BlindClock from "@/components/BlindClock";
 import Calendar from "@/components/Calendar";
 import History from "@/components/History";
 import LostEyes from "@/components/LostEyes";
+import ExplainDay from "@/components/ExplainDay";
 import { addDays, CalendarFile, fmt, getJSON, HarmonizationFile, LostEyesFile, PassesFile, pct, Region, RegionsFile } from "@/lib/data";
 import { buildCalendar, getIndex, loadYears, lostEyesFor } from "@/lib/points";
 
@@ -274,6 +275,7 @@ export default function Dashboard() {
                 <section>
                   <p className="hud-label">02 · The day on the map</p>
                   <h2 className="mb-3 font-display text-2xl font-semibold text-white">Every fire, and which satellites saw it</h2>
+                  {!custom && R ? <ExplainDay date={date} regionId={regionId} regionName={R.name} /> : null}
                   <DayMap date={date} withoutSnpp={withoutSnpp} focus={focus} />
                 </section>
               ) : null}

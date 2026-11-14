@@ -18,7 +18,7 @@ const SYSTEM = `You are BlindSpot, an assistant for a NASA Space Apps project th
 Rules:
 - Answer ONLY with facts and numbers returned by the tools. Never invent or estimate a number. If the tools do not have it, say so.
 - Always call find_region first when the user names a place, then use its id.
-- Name the period your numbers cover. Data runs from 15 Nov 2023 to 14 Nov 2026.
+- Name the period your numbers cover. Use region_summary or method_numbers to see what period the data covers.
 - "Fire events" are fused detections from all satellites; FRP is fire radiative power in megawatts on the VIIRS scale.
 - Suomi NPP stopped delivering fire data on 2 Nov 2026. "Only Suomi NPP" events are those the record now loses.
 - Copy numbers exactly as the tools give them (you may turn a share like 0.2293 into 22.93% or 22.9%).
@@ -37,6 +37,8 @@ const tools: FunctionDeclaration[] = [
     parametersJsonSchema: { type: "object", properties: { region_id: { type: "string" } }, required: ["region_id"] } },
   { name: "top_districts", description: "Rank districts by a metric: only_snpp_share, events, or unusual_days. Optionally within one province.",
     parametersJsonSchema: { type: "object", properties: { metric: { type: "string", enum: ["only_snpp_share", "events", "unusual_days"] }, province: { type: "string" } }, required: ["metric"] } },
+  { name: "day_detail", description: "Everything about one day in a region: events, harmonized events, FRP, unusual flag and percentile vs the same days in other years, the same date in other years, top districts that day, how many fires only Suomi NPP saw, strongest fire.",
+    parametersJsonSchema: { type: "object", properties: { region_id: { type: "string" }, date: { type: "string", description: "YYYY-MM-DD" } }, required: ["region_id", "date"] } },
   { name: "method_numbers", description: "Validation and method numbers: detections, duplicates removed, FRP calibration error before and after, confidence scores, satellite pass drift.",
     parametersJsonSchema: { type: "object", properties: {} } },
 ];
@@ -119,6 +121,43 @@ async function runTool(origin: string, name: string, a: Json): Promise<Json> {
         .slice(0, 10)
         .map((r) => ({ id: r.id, name: r.name, [metric]: r[metric], events: r.events }));
       return { metric, province: provId ?? "all", districts: list };
+    }
+    case "day_detail": {
+      const date = String(a.date ?? "");
+      const rid = id || "PAK";
+      const cal = await data<Record<string, unknown[]> & { start: string; days: number }>(origin, `calendar/${rid}.json`).catch(() => null);
+      if (!cal) return { error: "unknown region_id" };
+      const i = Math.round((Date.parse(date) - Date.parse(cal.start)) / 864e5);
+      if (!(i >= 0 && i < cal.days)) return { error: "date outside the record" };
+      // same day in other years
+      const others: Json[] = [];
+      for (let k = i % 365; k < cal.days; k += 365) if (Math.abs(k - i) >= 300) others.push({ date: addDays(cal.start, k), events: (cal.events_h ?? cal.events)[k] });
+      const day = await data<{ fields: string[]; rows: unknown[][] }>(origin, `events/${date}.json`).catch(() => null);
+      const byDistrict: Record<string, number> = {};
+      let onlySnpp = 0, multi = 0, maxFrp = 0;
+      if (day) {
+        const f = (n: string) => day.fields.indexOf(n);
+        const regionName = String(regions.find((r) => r.id === rid)?.name ?? "");
+        const kids = new Set(regions.filter((r) => r.parent === rid).map((r) => String(r.name)));
+        for (const row of day.rows) {
+          const dist = row[f("district")] as string | null;
+          if (row[f("persistent")]) continue;
+          if (rid !== "PAK" && dist !== regionName && !kids.has(String(dist))) continue;
+          byDistrict[dist ?? "border"] = (byDistrict[dist ?? "border"] ?? 0) + 1;
+          const sats = String(row[f("sats")]);
+          if (sats === "SNPP") onlySnpp++;
+          if (sats.includes(",")) multi++;
+          maxFrp = Math.max(maxFrp, Number(row[f("frp")]));
+        }
+      }
+      return {
+        date, region_id: rid,
+        events: cal.events[i], harmonized_events: (cal.events_h ?? cal.events)[i], frp_mw: cal.frp[i],
+        unusual: cal.unusual[i], percentile_vs_same_days_other_years: cal.pctl[i],
+        same_day_other_years: others,
+        top_districts: Object.entries(byDistrict).sort((x, y) => y[1] - x[1]).slice(0, 5).map(([name, n]) => ({ name, events: n })),
+        seen_only_by_suomi_npp: onlySnpp, seen_by_two_or_more_satellites: multi, strongest_fire_frp_mw: maxFrp,
+      };
     }
     case "method_numbers": {
       const v = await data<Json>(origin, "validation.json");
