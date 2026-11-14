@@ -192,12 +192,18 @@ export function minToHHMM(m: number): string {
   return `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`;
 }
 
-// Pass windows in Pakistan time for a longitude: local solar time -> UTC -> PKT (UTC+5)
+// Pass windows in Pakistan time for a longitude: local solar time -> UTC -> PKT (UTC+5).
+// Terra and Aqua are drifting, so both of their passes are moved by how far this
+// year's daytime pass sits from the long-term average.
 export function pktWindows(p: PassesFile, lon: number, sats: string[]) {
   const out: { sat: string; daynight: string; centre: number; half: number }[] = [];
   for (const s of sats) {
-    for (const w of p.satellites[s]?.passes ?? []) {
-      const centre = (((w.lst_center_min - lon * 4 + 300) % 1440) + 1440) % 1440;
+    const sat = p.satellites[s];
+    const byYear = sat?.day_pass_by_year;
+    const day = sat?.passes.find((x) => x.daynight === "D");
+    const shift = byYear?.length && day ? byYear[byYear.length - 1].lst_center_min - day.lst_center_min : 0;
+    for (const w of sat?.passes ?? []) {
+      const centre = (((w.lst_center_min + shift - lon * 4 + 300) % 1440) + 1440) % 1440;
       out.push({ sat: s, daynight: w.daynight, centre, half: w.half_width_min });
     }
   }

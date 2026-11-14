@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import NextPass from "@/components/NextPass";
+import BurnWindow from "@/components/BurnWindow";
 import { longestGap, minToHHMM, PassesFile, pktWindows, Region, SAT_COLOR, SAT_LABEL, SATS } from "@/lib/data";
 
 type Props = { passes: PassesFile; region: Region };
@@ -24,6 +25,7 @@ export default function BlindClock({ passes, region }: Props) {
 
   const S = 340, C = S / 2;
   return (
+    <>
     <div className="grid gap-6 md:grid-cols-[360px_1fr]">
       <svg viewBox={`0 0 ${S} ${S}`} className="w-full max-w-[360px]" role="img" aria-label="24-hour clock of satellite passes">
         <circle cx={C} cy={C} r={150} fill="#0f172a" stroke="#334155" />
@@ -62,7 +64,7 @@ export default function BlindClock({ passes, region }: Props) {
         </div>
         <h3 className="font-semibold text-white">Blind Clock: when is {region.name} watched?</h3>
         <p className="mt-1 text-sm text-slate-400">
-          Coloured arcs are pass windows in Pakistan time, learned from when each satellite actually reported fires. The red wedge is the longest
+          Coloured arcs are pass windows in Pakistan time, learned from when each satellite actually reported fires, with the drifting Terra and Aqua shown at this year's times. The red wedge is the longest
           stretch with no satellite overhead: a fire that starts and ends inside it is never recorded.
         </p>
         <ul className="mt-4 space-y-2">
@@ -104,5 +106,7 @@ export default function BlindClock({ passes, region }: Props) {
         <p className="mt-1 text-xs text-slate-500">Mean daytime detection time per year, Pakistan time. Fires burn hardest in the afternoon, so a drifting pass changes what MODIS sees.</p>
       </div>
     </div>
+    <BurnWindow passes={passes} region={region} />
+    </>
   );
 }
