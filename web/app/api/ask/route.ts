@@ -2,10 +2,11 @@
 // The API key stays on the server (GEMINI_API_KEY); the browser never sees it.
 import { GoogleGenAI, type Content, type FunctionDeclaration } from "@google/genai";
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+// 2.5 Flash with thinking switched off answers tool-calling questions fast and reliably.
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 // Tried in order when a model is missing (404) or overloaded (503 / UNAVAILABLE).
 const MODELS = [...new Set([MODEL, "gemini-2.5-flash", "gemini-2.5-flash-lite"])];
-const RETRYABLE = /404|NOT_FOUND|not found|not supported|503|UNAVAILABLE|overloaded|high demand|500|INTERNAL/i;
+const RETRYABLE = /404|NOT_FOUND|not found|not supported|503|UNAVAILABLE|overloaded|high demand|500|INTERNAL|504|DEADLINE|timed? ?out|aborted/i;
 const MAX_ROUNDS = 5;
 
 // Gemini plus tool calls can take a while; the platform default may be shorter.
@@ -165,7 +166,7 @@ export async function POST(req: Request) {
   const question = String(body.question ?? "").slice(0, 600);
   if (!question.trim()) return Response.json({ error: "Empty question" }, { status: 400 });
   const origin = new URL(req.url).origin;
-  const ai = new GoogleGenAI({ apiKey: key, httpOptions: { timeout: 25000 } });
+  const ai = new GoogleGenAI({ apiKey: key, httpOptions: { timeout: 20000 } });
 
   const contents: Content[] = (body.history ?? []).slice(0, -1).map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.text }] }));
   contents.push({ role: "user", parts: [{ text: `${question}\n\n(The user is currently looking at region id: ${body.regionId ?? "PAK"})` }] });
@@ -173,17 +174,24 @@ export async function POST(req: Request) {
   const used: string[] = [];
   let toolText = "";
   let mi = 0;
+  const t0 = Date.now();
   try {
     for (let attempt = 0; attempt < 2; attempt++) {
       for (let round = 0; round < MAX_ROUNDS; round++) {
-        const config = { systemInstruction: SYSTEM, tools: [{ functionDeclarations: tools }], temperature: 0.2 };
+        const configFor = (m: string) => ({
+          systemInstruction: SYSTEM,
+          tools: [{ functionDeclarations: tools }],
+          temperature: 0.2,
+          // no long "thinking" pass: the tools do the work, and it keeps each call well inside the deadline
+          ...(m.startsWith("gemini-2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+        });
         let res;
         for (let tries = 0; ; tries++) {
           try {
-            res = await ai.models.generateContent({ model: MODELS[mi], contents, config });
+            res = await ai.models.generateContent({ model: MODELS[mi], contents, config: configFor(MODELS[mi]) });
             break;
           } catch (e) {
-            if (!RETRYABLE.test(String(e)) || tries >= 4) throw e;
+            if (!RETRYABLE.test(String(e)) || tries >= 4 || Date.now() - t0 > 40000) throw e;
             // first retry the same model after a short pause, then move down the list
             if (tries % 2 === 1 && mi < MODELS.length - 1) mi++;
             await new Promise((r) => setTimeout(r, 600 * (tries + 1)));
@@ -216,7 +224,7 @@ export async function POST(req: Request) {
   } catch (e) {
     const msg = String(e);
     const limited = /429|RESOURCE_EXHAUSTED|quota/i.test(msg);
-    const busy = /503|UNAVAILABLE|overloaded|high demand/i.test(msg);
+    const busy = /503|UNAVAILABLE|overloaded|high demand|504|DEADLINE/i.test(msg);
     return Response.json(
       {
         error: limited ? "The assistant is busy (rate limit). Try again in a minute." : busy ? "Gemini is overloaded right now. Try again in a few seconds." : "The assistant failed to answer. Try again.",
