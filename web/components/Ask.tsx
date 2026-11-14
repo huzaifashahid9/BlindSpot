@@ -68,7 +68,7 @@ export default function Ask({ regionId }: { regionId: string }) {
             </p>
             {m.role === "assistant" && m.tools?.length ? (
               <p className="mt-2 text-xs text-slate-500">
-                {m.checked ? <><Icon name="check" className="h-3.5 w-3.5 text-emerald-400" /> every number checked against the data</> : <><Icon name="alert" className="h-3.5 w-3.5 text-amber-400" /> some numbers could not be checked</>} · tools used: {m.tools.join(", ")}
+                {m.checked ? <><Icon name="check" className="h-3.5 w-3.5 text-emerald-400" /> every number checked against the data</> : <><Icon name="alert" className="h-3.5 w-3.5 text-amber-400" /> some numbers could not be checked</>}
               </p>
             ) : null}
           </div>
