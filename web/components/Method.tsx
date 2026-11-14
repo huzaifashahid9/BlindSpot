@@ -203,10 +203,12 @@ export default function Method() {
         <li>Schroeder et al. (2014), Remote Sensing of Environment 143, 85–96, doi:10.1016/j.rse.2013.12.008.</li>
         <li>District boundaries: geoBoundaries (Runfola et al. 2020), CC BY 4.0. Basemap © Esri; night lights and relief imagery from NASA GIBS.</li>
       </ul>
-      <h2>9. Use of AI</h2>
+      <h2>9. Use of Super Intelligence (SI) / AI</h2>
       <p className="text-sm">
         The Ask BlindSpot assistant uses Google Gemini through function calling over this site&apos;s data, with a server-side check that every number
-        in a reply appears in the data. AI coding assistants were used while building the project.
+        in a reply appears in the data. Much of the code was written and debugged with an SI coding assistant (Anthropic Claude), directed and checked
+        by the team, and the BlindSpot logo and slide layouts were designed with SI assistance. Every map, chart and figure is drawn by our code from
+        NASA data, not generated.
       </p>
     </article>
   );

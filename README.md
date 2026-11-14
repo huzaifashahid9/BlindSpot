@@ -83,9 +83,12 @@ Full detail and limits are on the site's Method page.
 
 We acknowledge the use of data and imagery from NASA's Fire Information for Resource Management System (FIRMS), part of NASA's Earth Science Data and Information System (ESDIS), and imagery from NASA GIBS. MODIS Collection 6.1 Active Fire (MCD14ML/MCD14DL); VIIRS 375 m Active Fire from Suomi NPP, NOAA-20 and NOAA-21. District boundaries from geoBoundaries (CC BY 4.0). Basemap © Esri; NASA GIBS imagery.
 
-## Use of AI
+## Use of Super Intelligence (SI) / AI
 
-Ask BlindSpot uses Google Gemini through function calling over this site's data. AI coding assistants were used while building the project.
+- **Code and text:** much of the Python pipeline and the web app was written and debugged with an SI coding assistant (Anthropic Claude), directed and checked by the team. Commit history and this note are the record of that.
+- **Logo and slide deck:** the BlindSpot logo (an SVG drawn in code) and the slide layouts were designed with SI assistance.
+- **Inside the product:** Ask BlindSpot AI uses Google Gemini through function calling over this site's data, with a server-side check that every number in a reply appears in the data.
+- **Not SI-generated:** every map, chart and figure is drawn by our code from NASA data.
 
 ## Team
 
