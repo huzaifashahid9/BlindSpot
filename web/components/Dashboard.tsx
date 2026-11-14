@@ -257,21 +257,37 @@ export default function Dashboard() {
                 </optgroup>
               ))}
             </select>
-            <nav className="flex flex-wrap gap-1">
-              {TABS.map((t, i) => (
-                <button
-                  key={t.id}
-                  onClick={() => go(t.id)}
-                  className={`rounded-lg px-3 py-1.5 text-sm transition ${tab === t.id ? "bg-orange-500 font-semibold text-black" : "text-slate-300 hover:bg-slate-800"}`}
-                >
-                  {t.id === "live" ? (
-                    <span className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-red-500 align-middle" />
-                  ) : (
-                    <span className={`mr-1.5 font-mono text-[10px] ${tab === t.id ? "text-black/60" : "text-slate-500"}`}>0{i}</span>
-                  )}
-                  {t.label}
-                </button>
-              ))}
+            <nav className="flex flex-wrap gap-2" aria-label="Sections">
+              {TABS.map((t, i) => {
+                const on = tab === t.id;
+                const live = t.id === "live";
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => go(t.id)}
+                    aria-current={on ? "page" : undefined}
+                    className={`group inline-flex cursor-pointer items-center rounded-xl border px-3.5 py-2 text-sm font-medium shadow-sm transition duration-200 hover:-translate-y-0.5 active:translate-y-0 ${
+                      on
+                        ? live
+                          ? "border-red-400 bg-red-500 font-semibold text-white shadow-[0_0_24px_-6px_rgba(239,68,68,0.9)]"
+                          : "border-orange-400 bg-orange-500 font-semibold text-black shadow-[0_0_24px_-6px_rgba(249,115,22,0.9)]"
+                        : live
+                          ? "border-red-500/70 bg-red-500/15 text-red-100 hover:border-red-400 hover:bg-red-500/25 hover:shadow-[0_0_20px_-6px_rgba(239,68,68,0.8)]"
+                          : "border-slate-600 bg-slate-800/70 text-slate-100 hover:border-orange-400/70 hover:bg-slate-700/80 hover:text-white hover:shadow-[0_0_18px_-8px_rgba(249,115,22,0.8)]"
+                    }`}
+                  >
+                    {live ? (
+                      <span className="relative mr-2 inline-flex h-2.5 w-2.5">
+                        <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${on ? "bg-white" : "bg-red-400"}`} />
+                        <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${on ? "bg-white" : "bg-red-500"}`} />
+                      </span>
+                    ) : (
+                      <span className={`mr-1.5 font-mono text-[10px] ${on ? "text-black/60" : "text-orange-300/80"}`}>0{i}</span>
+                    )}
+                    {live ? "LIVE now" : t.label}
+                  </button>
+                );
+              })}
             </nav>
             <div className="ml-auto flex items-center gap-3">
               {tab === "calendar" ? (
