@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import { addDays, CalendarFile, fmt, HarmonizationFile } from "@/lib/data";
 import { heat, inkOn } from "@/lib/ramp";
+import Outlook from "@/components/Outlook";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-type Props = { cal: CalendarFile; harm: HarmonizationFile | null; regionName: string };
+type Props = { cal: CalendarFile; harm: HarmonizationFile | null; regionName: string; outlook?: boolean };
 
 function median(xs: number[]) {
   if (!xs.length) return NaN;
@@ -15,7 +16,7 @@ function median(xs: number[]) {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
-export default function History({ cal, harm, regionName }: Props) {
+export default function History({ cal, harm, regionName, outlook = true }: Props) {
   const [metric, setMetric] = useState<"h" | "raw">("h");
   const [hover, setHover] = useState<{ y: number; m: number } | null>(null);
   const series = metric === "h" && cal.events_h ? cal.events_h : cal.events;
@@ -83,6 +84,7 @@ export default function History({ cal, harm, regionName }: Props) {
 
   return (
     <div className="space-y-8">
+      {outlook ? <Outlook cal={cal} regionName={regionName} /> : null}
       <section className="grid gap-4 md:grid-cols-3">
         <div className="hud-card md:col-span-2 p-5">
           <p className="hud-label">

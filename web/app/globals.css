@@ -53,3 +53,20 @@ body {
     animation: none !important;
   }
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .report section {
+    break-inside: avoid;
+  }
+  .break-before-page {
+    break-before: page;
+  }
+}

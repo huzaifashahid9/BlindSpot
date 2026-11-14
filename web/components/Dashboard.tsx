@@ -198,6 +198,11 @@ export default function Dashboard() {
                   Switch off Suomi NPP
                 </label>
               ) : null}
+              {!custom ? (
+                <a href={`/report?region=${regionId}`} target="_blank" rel="noopener" className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800">
+                  ⤓ Report PDF
+                </a>
+              ) : null}
               <Link href="/method" className="text-sm text-slate-400 hover:text-white">
                 Method
               </Link>
