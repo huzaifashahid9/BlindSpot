@@ -1,0 +1,21 @@
+# data that is too large or is rebuilt by the pipeline
+data/raw/
+data/processed/
+
+# secrets: never commit keys
+.env
+.env.*
+!.env.example
+pipeline/.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# node / next
+node_modules/
+.next/
+*.tsbuildinfo
+.vercel
+.DS_Store

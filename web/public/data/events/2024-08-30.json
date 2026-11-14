@@ -1,0 +1,1 @@
+{"date":"2024-08-30","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[26.0918,68.8779,1.9,0.47,"NOAA21","Sanghar",1,0.0,1.9,1,"01:27","01:27","viirs_only"],[25.1358,66.9134,1.4,0.47,"NOAA20","Lasbela",1,0.0,1.4,1,"02:17","02:17","viirs_only"]]}

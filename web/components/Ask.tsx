@@ -1,0 +1,90 @@
+"use client";
+
+import { useState } from "react";
+
+type Msg = { role: "user" | "assistant"; text: string; checked?: boolean; tools?: string[] };
+
+const EXAMPLES = [
+  "How much of Pakistan's fire record did we lose when Suomi NPP stopped?",
+  "When was the rice-residue burning season in Sheikhupura in 2025, and how did it compare with 2024?",
+  "Which Punjab districts lose the most fires without Suomi NPP?",
+  "لاہور میں نومبر 2025 میں کتنی آگ لگی؟",
+];
+
+export default function Ask({ regionId }: { regionId: string }) {
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function send(text: string) {
+    if (!text.trim() || busy) return;
+    const next: Msg[] = [...msgs, { role: "user", text }];
+    setMsgs(next);
+    setQ("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: text, regionId, history: next.slice(-6).map((m) => ({ role: m.role, text: m.text })) }),
+      });
+      const data = await res.json();
+      setMsgs([...next, { role: "assistant", text: data.answer ?? data.error ?? "No answer.", checked: data.checked, tools: data.tools }]);
+    } catch {
+      setMsgs([...next, { role: "assistant", text: "Could not reach the assistant. Try again in a moment." }]);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <p className="text-sm text-slate-400">
+        Ask BlindSpot answers from this site&apos;s own NASA data through function calls to Gemini. Every number in a reply is checked against the data
+        the tools returned before you see it. Ask in English or Urdu.
+      </p>
+      <div className="mt-4 space-y-3">
+        {msgs.length === 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLES.map((e) => (
+              <button key={e} onClick={() => send(e)} className="rounded-full border border-slate-700 px-3 py-1.5 text-left text-sm text-slate-300 hover:bg-slate-800">
+                {e}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {msgs.map((m, i) => (
+          <div key={i} className={m.role === "user" ? "ml-10 rounded-lg bg-slate-800 p-3 text-slate-100" : "mr-10 rounded-lg border border-slate-800 bg-slate-900 p-3 text-slate-200"}>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed" dir="auto">
+              {m.text}
+            </p>
+            {m.role === "assistant" && m.tools?.length ? (
+              <p className="mt-2 text-xs text-slate-500">
+                {m.checked ? "✓ every number checked against the data" : "⚠ some numbers could not be checked"} · tools used: {m.tools.join(", ")}
+              </p>
+            ) : null}
+          </div>
+        ))}
+        {busy ? <p className="text-sm text-slate-400">Looking it up in the data…</p> : null}
+      </div>
+      <form
+        className="mt-4 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          send(q);
+        }}
+      >
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          dir="auto"
+          placeholder="Ask about fires, seasons, districts or the lost satellite…"
+          className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500"
+        />
+        <button disabled={busy} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50">
+          Ask
+        </button>
+      </form>
+    </div>
+  );
+}
