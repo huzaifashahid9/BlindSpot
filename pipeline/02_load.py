@@ -41,7 +41,9 @@ def read_frames():
         df["is_nrt"] = "nrt" in f.name.lower()
         df["src_file"] = f.name
         frames.append(df)
-    for f in sorted((RAW / "api").glob("*/*.csv")):
+    # 01_download.py writes data/raw/<SOURCE>/<date>.csv (older runs used data/raw/api/<SOURCE>/)
+    api_files = sorted(set((RAW / "api").glob("*/*.csv")) | {f for f in RAW.glob("*/*.csv") if f.parent.name not in ("archive", "api")})
+    for f in api_files:
         if f.stat().st_size < 10:
             continue
         df = pd.read_csv(f, dtype={"confidence": str, "version": str})
