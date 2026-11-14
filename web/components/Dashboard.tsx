@@ -14,6 +14,7 @@ import NextPass from "@/components/NextPass";
 import { addDays, CalendarFile, fmt, getJSON, HarmonizationFile, LostEyesFile, PassesFile, pct, Region, RegionsFile } from "@/lib/data";
 import { buildCalendar, getIndex, loadYears, lostEyesFor } from "@/lib/points";
 import Icon from "@/components/Icon";
+import Footer from "@/components/Footer";
 import { CountUp, Reveal } from "@/components/Motion";
 import type { TourStep } from "@/components/Tour";
 
@@ -491,10 +492,7 @@ export default function Dashboard() {
           {tab === "ask" ? <Ask regionId={custom ? regionId : regionId} /> : null}
         </main>
 
-        <footer className="mt-20 border-t border-slate-800 pt-6 text-xs text-slate-500">
-          Data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP, NOAA-20, NOAA-21), imagery from NASA GIBS, boundaries from geoBoundaries
-          (CC BY 4.0). Built for NASA Space Apps Challenge 2026. See <Link className="underline" href="/method">method, validation and credits</Link>.
-        </footer>
+        <Footer />
       </div>
 
       {touring ? <Tour steps={tourSteps} onStep={onTourStep} onClose={() => setTouring(false)} /> : null}
@@ -554,55 +552,140 @@ function Stat({ label, value, num, format, sub, accent, spark }: { label: string
   );
 }
 
+const ERA_LABEL: Record<string, string> = {
+  Terra: "Terra",
+  "Terra,Aqua": "Terra + Aqua (MODIS only)",
+  "Terra,Aqua,SNPP": "+ Suomi NPP",
+  "Terra,Aqua,SNPP,NOAA20": "+ NOAA-20",
+  "Terra,Aqua,SNPP,NOAA20,NOAA21": "all five",
+  "Terra,Aqua,NOAA20,NOAA21": "Suomi NPP gone",
+};
+
 function RawVsHarmonized({ cal, regionName }: { cal: CalendarFile; regionName: string }) {
-  // weekly totals: raw MODIS detections, raw VIIRS detections, harmonized events
-  const weeks: { m: number; v: number; e: number; d: string }[] = [];
-  for (let i = 0; i < cal.days; i += 7) {
+  const [all, setAll] = useState(false);
+  // recent: weekly over the last three years; all: monthly over the whole record
+  const from = all ? 0 : Math.max(0, cal.days - 3 * 365);
+  const pts: { m: number; v: number; e: number; d: string }[] = [];
+  const push = (i0: number, i1: number) => {
     let m = 0, v = 0, e = 0;
-    for (let k = i; k < Math.min(cal.days, i + 7); k++) {
+    for (let k = i0; k < i1; k++) {
       m += cal.raw_modis[k];
       v += cal.raw_viirs[k];
       e += (cal.events_h ?? cal.events)[k];
     }
-    weeks.push({ m, v, e, d: addDays(cal.start, i) });
+    pts.push({ m, v, e, d: addDays(cal.start, i0) });
+  };
+  if (all) {
+    let i0 = 0;
+    for (let i = 1; i <= cal.days; i++) {
+      if (i === cal.days || addDays(cal.start, i).slice(8) === "01") {
+        push(i0, i);
+        i0 = i;
+      }
+    }
+  } else for (let i = from; i < cal.days; i += 7) push(i, Math.min(cal.days, i + 7));
+  // scale from the multi-satellite years: the Terra-only months (2000-02) are rough and would flatten the rest
+  const firstMulti = cal.constellation?.find(([, k]) => k !== "Terra")?.[0];
+  const multiFrom = firstMulti !== undefined ? addDays(cal.start, firstMulti) : "";
+  const max = Math.max(1, ...pts.filter((w) => w.d >= multiFrom.slice(0, 8) + "01").map((w) => Math.max(w.v, w.e)));
+  const W = 1200, H = 260, L = 56, T = 22;
+  const X = (i: number) => L + (i / Math.max(1, pts.length - 1)) * (W - L - 8);
+  const Y = (v: number) => T + H - (Math.min(v, max * 1.04) / max) * H;
+  const tot = pts.reduce((a, w) => ({ m: a.m + w.m, v: a.v + w.v, e: a.e + w.e }), { m: 0, v: 0, e: 0 });
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(max * f));
+  const line = (k: "m" | "v" | "e") => pts.map((w, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(w[k]).toFixed(1)}`).join(" ");
+  const area = `${line("e")} L${X(pts.length - 1)},${T + H} L${X(0)},${T + H} Z`;
+  const yearStep = all ? 2 : 1;
+  // constellation eras as bands (all-years view)
+  const eras: { x0: number; x1: number; label: string }[] = [];
+  if (all && cal.constellation?.length) {
+    const idx = (day: number) => {
+      const k = pts.findIndex((p) => p.d >= addDays(cal.start, day));
+      return k < 0 ? pts.length - 1 : k;
+    };
+    cal.constellation.forEach(([d0, k], n) => {
+      const d1 = cal.constellation![n + 1]?.[0] ?? cal.days;
+      eras.push({ x0: X(idx(d0)), x1: X(idx(d1)), label: ERA_LABEL[k] ?? k.split(",").join(" + ") });
+    });
   }
-  const max = Math.max(1, ...weeks.map((w) => w.v));
-  const W = 720, H = 160, L = 44;
-  const tot = weeks.reduce((a, w) => ({ m: a.m + w.m, v: a.v + w.v, e: a.e + w.e }), { m: 0, v: 0, e: 0 });
-  const ticks = [0, 0.5, 1].map((f) => Math.round(max * f));
-  const line = (k: "m" | "v" | "e") => weeks.map((w, i) => `${i ? "L" : "M"}${L + (i / (weeks.length - 1)) * (W - L)},${H - (w[k] / max) * H}`).join(" ");
   return (
     <section>
-      <p className="hud-label">03 · Why harmonize</p>
-      <h2 className="mb-1 font-display text-2xl font-semibold text-white">Same fires, three different answers: {regionName}</h2>
-      <p className="mb-3 text-sm text-slate-400">
-        Weekly raw MODIS detections, raw VIIRS detections (three satellites, many duplicates), and BlindSpot&apos;s harmonized fire events. Without
-        harmonization, &quot;how much burned?&quot; depends on which satellite you ask.
-      </p>
-      <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full" role="img" aria-label={`Weekly detections and fire events in ${regionName}`}>
-        {ticks.map((t) => (
-          <g key={t}>
-            <line x1={L} x2={W} y1={H - (t / max) * H} y2={H - (t / max) * H} stroke="#1e293b" />
-            <text x={L - 6} y={Math.max(10, H - (t / max) * H + 4)} fontSize={10} fill="#64748b" textAnchor="end">
-              {fmt(t)}
-            </text>
-          </g>
-        ))}
-        <path d={line("v")} fill="none" stroke="#a78bfa" strokeWidth={1.5} />
-        <path d={line("e")} fill="none" stroke="#fb923c" strokeWidth={2.5} />
-        <path d={line("m")} fill="none" stroke="#38bdf8" strokeWidth={1.5} />
-        {weeks.map((w, i) =>
-          w.d.slice(5, 7) === "01" && Number(w.d.slice(8)) <= 7 ? (
-            <text key={w.d} x={L + (i / (weeks.length - 1)) * (W - L)} y={H + 16} fontSize={11} fill="#64748b">
-              {w.d.slice(0, 4)}
-            </text>
-          ) : null,
-        )}
-      </svg>
-      <div className="mt-1 flex gap-4 text-xs text-slate-400">
-        <span className="text-violet-300">raw VIIRS detections ({fmt(tot.v)})</span>
-        <span className="text-sky-300">raw MODIS detections ({fmt(tot.m)})</span>
-        <span className="font-semibold text-orange-300">harmonized fire events ({fmt(Math.round(tot.e))})</span>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="hud-label">03 · Why harmonize</p>
+          <h2 className="mb-1 font-display text-2xl font-semibold text-white">Same fires, three different answers: {regionName}</h2>
+          <p className="mb-3 max-w-3xl text-sm text-slate-400">
+            Raw MODIS detections, raw VIIRS detections (several satellites, many duplicates) and BlindSpot&apos;s harmonized fire events. Without
+            harmonization, &quot;how much burned?&quot; depends on which satellite you ask.
+          </p>
+        </div>
+        <div className="mb-3 flex rounded-lg border border-slate-700 p-0.5 text-xs">
+          {[
+            { k: false, l: "Last 3 years, weekly" },
+            { k: true, l: "Whole record, monthly" },
+          ].map((o) => (
+            <button key={o.l} onClick={() => setAll(o.k)} className={`rounded-md px-3 py-1.5 transition ${all === o.k ? "bg-orange-500 font-semibold text-black" : "text-slate-300 hover:bg-slate-800"}`}>
+              {o.l}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="hud-card p-4">
+        <svg viewBox={`0 0 ${W} ${T + H + 28}`} className="w-full" role="img" aria-label={`Detections and fire events in ${regionName}`}>
+          <defs>
+            <linearGradient id="hfill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stopColor="#fb923c" stopOpacity={0.35} />
+              <stop offset="1" stopColor="#fb923c" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          {eras.map((e, n) => (
+            <g key={n}>
+              <rect x={e.x0} y={T} width={Math.max(0, e.x1 - e.x0)} height={H} fill={n % 2 ? "#0f172a" : "transparent"} opacity={0.7} />
+              <line x1={e.x0} x2={e.x0} y1={T - 4} y2={T + H} stroke="#334155" strokeDasharray="3 3" />
+              {e.x1 - e.x0 > 70 ? (
+                <text x={e.x0 + 5} y={T - 8} fontSize={11} fill="#67e8f9">
+                  {e.label}
+                </text>
+              ) : null}
+            </g>
+          ))}
+          {ticks.map((t) => (
+            <g key={t}>
+              <line x1={L} x2={W - 8} y1={Y(t)} y2={Y(t)} stroke="#1e293b" />
+              <text x={L - 8} y={Y(t) + 4} fontSize={12} fill="#64748b" textAnchor="end">
+                {t >= 1000 ? `${Math.round(t / 100) / 10}k` : t}
+              </text>
+            </g>
+          ))}
+          <path d={area} fill="url(#hfill)" />
+          <path d={line("v")} fill="none" stroke="#a78bfa" strokeWidth={1.4} opacity={0.9} />
+          <path d={line("m")} fill="none" stroke="#38bdf8" strokeWidth={1.4} />
+          <path d={line("e")} fill="none" stroke="#fb923c" strokeWidth={2.2} />
+          {pts.map((w, i) => {
+            const y = Number(w.d.slice(0, 4));
+            const first = all ? w.d.slice(5, 7) === "01" : w.d.slice(5, 7) === "01" && Number(w.d.slice(8)) <= 7;
+            return first && y % yearStep === 0 ? (
+              <g key={w.d}>
+                <line x1={X(i)} x2={X(i)} y1={T + H} y2={T + H + 5} stroke="#475569" />
+                <text x={X(i)} y={T + H + 20} fontSize={12} fill="#64748b" textAnchor="middle">
+                  {y}
+                </text>
+              </g>
+            ) : null;
+          })}
+        </svg>
+        <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs">
+          <span className="flex items-center gap-2 text-violet-300">
+            <span className="inline-block h-0.5 w-5 bg-violet-400" /> raw VIIRS detections <b className="font-mono">{fmt(tot.v)}</b>
+          </span>
+          <span className="flex items-center gap-2 text-sky-300">
+            <span className="inline-block h-0.5 w-5 bg-sky-400" /> raw MODIS detections <b className="font-mono">{fmt(tot.m)}</b>
+          </span>
+          <span className="flex items-center gap-2 font-semibold text-orange-300">
+            <span className="inline-block h-1 w-5 rounded bg-orange-400" /> harmonized fire events <b className="font-mono">{fmt(Math.round(tot.e))}</b>
+          </span>
+          {all ? <span className="text-slate-500">Bands: which satellites were flying. The orange line stays on one scale across all of them.</span> : null}
+        </div>
       </div>
     </section>
   );
