@@ -120,7 +120,7 @@ export default function Footer() {
       </div>
 
       <div className="mt-12 flex flex-col gap-3 border-t border-slate-800/80 pt-6 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
-        <p>© 2026 Team Hexabytes. Fire data courtesy of NASA FIRMS. BlindSpot is a Space Apps project and is not endorsed by NASA. Code, logo and Ask BlindSpot AI are SI-assisted (<Link href="/method" className="underline hover:text-orange-300">details</Link>).</p>
+        <p>© 2026 Team Hexabytes. Fire data courtesy of NASA FIRMS. BlindSpot is a Space Apps project and is not endorsed by NASA.</p>
       </div>
       <BackToTop />
     </footer>
