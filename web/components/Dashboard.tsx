@@ -362,6 +362,11 @@ export default function Dashboard() {
                   <Icon name="download" /> Report PDF
                 </a>
               ) : null}
+              {!custom ? (
+                <a href={`/district/${regionId}`} target="_blank" rel="noopener" className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800">
+                  <Icon name="spark" /> Scorecard
+                </a>
+              ) : null}
               <button
                 onClick={() => window.dispatchEvent(new Event(WELCOME_EVENT))}
                 className="rounded-lg border border-orange-400/50 bg-orange-500/10 px-3 py-1.5 text-sm text-orange-200 hover:bg-orange-500/20"
