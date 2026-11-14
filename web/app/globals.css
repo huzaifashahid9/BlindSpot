@@ -348,3 +348,18 @@ body {
 @keyframes bs-ping {
   to { box-shadow: 0 0 0 10px rgba(251, 146, 60, 0); }
 }
+
+/* welcome card drawings */
+.pulse-dot {
+  animation: bs-glow 1.8s ease-in-out infinite;
+}
+@keyframes bs-glow {
+  50% { opacity: 0.35; }
+}
+.welcome-orbit {
+  animation: bs-orbit 6s ease-in-out infinite alternate;
+}
+@keyframes bs-orbit {
+  from { transform: translateX(0); }
+  to { transform: translateX(200px); }
+}

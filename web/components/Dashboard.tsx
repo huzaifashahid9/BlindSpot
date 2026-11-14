@@ -17,6 +17,8 @@ import Icon from "@/components/Icon";
 import Footer from "@/components/Footer";
 import { CountUp, Reveal } from "@/components/Motion";
 import type { TourStep } from "@/components/Tour";
+import Term from "@/components/Term";
+import { WELCOME_EVENT } from "@/components/Welcome";
 
 const DayMap = dynamic(() => import("@/components/DayMap"), { ssr: false, loading: () => <div className="h-[420px] rounded-xl bg-slate-900" /> });
 const Hero = dynamic(() => import("@/components/Hero"), { ssr: false, loading: () => <div className="-mx-4 min-h-[86vh] md:mx-0" /> });
@@ -24,6 +26,7 @@ const Hero = dynamic(() => import("@/components/Hero"), { ssr: false, loading: (
 const Simulator = dynamic(() => import("@/components/Simulator"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
 const SeasonRace = dynamic(() => import("@/components/SeasonRace"), { ssr: false });
 const Tour = dynamic(() => import("@/components/Tour"), { ssr: false });
+const Welcome = dynamic(() => import("@/components/Welcome"), { ssr: false });
 const PlaceSearch = dynamic(() => import("@/components/PlaceSearch"), { ssr: false });
 const Live = dynamic(() => import("@/components/Live"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
 
@@ -38,6 +41,18 @@ const TABS = [
   { id: "ask", label: "Ask AI" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
+
+// One sentence per tab, for someone who has never seen a fire chart.
+const PLAIN: Record<Tab, string> = {
+  live: "Fires that satellites spotted in Pakistan in the last 24 hours, and which districts are burning more than they normally do at this time of year.",
+  calendar: "Each small square is one day. The brighter the colour, the more fires there were that day. Click any day to see its fires on the map.",
+  history: "Is this year burning more or less than past years? The bars compare years, the race compares seasons, and the outlook shows what the next two weeks usually bring.",
+  lost: "One satellite, Suomi NPP, stopped on 2 November 2026. This shows the fires that only it saw, which we will now miss, and the districts that lose the most.",
+  sim: "Turn satellites on and off like light switches, and see how many fires would go unseen without them.",
+  clock: "Satellites pass over only at certain hours. This shows the hours when no satellite is watching, so a fire then can be missed completely.",
+  area: "Draw a circle anywhere on the map and download the fire data for it as a spreadsheet.",
+  ask: "Ask a question in normal words, like: Which district burned the most last November? BlindSpot AI answers from this data and checks its numbers.",
+};
 
 export default function Dashboard() {
   const [regions, setRegions] = useState<RegionsFile | null>(null);
@@ -343,6 +358,12 @@ export default function Dashboard() {
                   <Icon name="download" /> Report PDF
                 </a>
               ) : null}
+              <button
+                onClick={() => window.dispatchEvent(new Event(WELCOME_EVENT))}
+                className="rounded-lg border border-orange-400/50 bg-orange-500/10 px-3 py-1.5 text-sm text-orange-200 hover:bg-orange-500/20"
+              >
+                What is this?
+              </button>
               <Link href="/method" className="text-sm text-slate-400 hover:text-white">
                 Method
               </Link>
@@ -369,11 +390,11 @@ export default function Dashboard() {
 
         {stats ? (
           <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat label={`Harmonized fire events, ${custom ? `${le?.window.from.slice(0, 4) ?? ""} to ${regions?.data_to.slice(0, 4) ?? ""}` : years}`} num={stats.events} format={(v) => fmt(Math.round(v))} sub={R?.name} spark={C ? (C.events_h ?? C.events) : undefined} />
-            <Stat label="Unusual days" num={stats.unusual} format={(v) => fmt(Math.round(v))} sub={`${fmt(stats.lost)} of ${fmt(stats.win)} since Nov 2023 vanish without Suomi NPP`} />
-            <Stat label="Seen only by Suomi NPP" num={stats.only} format={(v) => pct(v)} accent sub="lost from the record since 2 Nov 2026" />
+            <Stat label={<><Term k="harmonized">Harmonized</Term> <Term k="fire event">fire events</Term>, {custom ? `${le?.window.from.slice(0, 4) ?? ""} to ${regions?.data_to.slice(0, 4) ?? ""}` : years}</>} num={stats.events} format={(v) => fmt(Math.round(v))} sub={R?.name} spark={C ? (C.events_h ?? C.events) : undefined} />
+            <Stat label={<Term k="unusual day">Unusual days</Term>} num={stats.unusual} format={(v) => fmt(Math.round(v))} sub={`${fmt(stats.lost)} of ${fmt(stats.win)} since Nov 2023 vanish without Suomi NPP`} />
+            <Stat label={<>Seen only by <Term k="suomi npp">Suomi NPP</Term></>} num={stats.only} format={(v) => pct(v)} accent sub="lost from the record since 2 Nov 2026" />
             <Stat
-              label="Trust Score (0 to 100)"
+              label={<><Term k="trust score">Trust Score</Term> (0 to 100)</>}
               num={stats.trust}
               format={(v) => v.toFixed(0)}
               value={custom ? "area" : "district view"}
@@ -386,13 +407,17 @@ export default function Dashboard() {
         {custom && areaBusy ? <p className="mt-3 text-sm text-orange-300">Computing your area from every fire event…</p> : null}
 
         <main key={tab} className="tab-enter mt-8">
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-sky-400/25 bg-sky-400/[0.06] px-4 py-3">
+            <span className="mt-0.5 shrink-0 rounded-md bg-sky-400/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-sky-300">In plain words</span>
+            <p className="text-sm leading-relaxed text-slate-200">{PLAIN[tab]}</p>
+          </div>
           {tab === "calendar" ? (
             <div className="space-y-10">
               <section>
                 <p className="hud-label">01 · Daily burning calendar</p>
                 <h2 className="font-display text-2xl font-semibold text-white">{R?.name}: every day, one square</h2>
                 <p className="mb-4 mt-1 max-w-4xl text-sm text-slate-400">
-                  Harmonized fire events per day from MODIS + VIIRS (persistent heat sources removed). {C?.baseline_note}{" "}
+                  <Term k="harmonized">Harmonized</Term> <Term k="fire event">fire events</Term> per day from <Term k="modis">MODIS</Term> + <Term k="viirs">VIIRS</Term> (persistent heat sources removed). {C?.baseline_note}{" "}
                   {withoutSnpp ? <b className="text-rose-300">Suomi NPP is switched off: this is the record from now on.</b> : null}
                 </p>
                 {C ? <Calendar cal={C} selected={date} onSelect={setDate} withoutSnpp={withoutSnpp} /> : <div className="h-64 animate-pulse rounded-2xl bg-slate-900" />}
@@ -501,6 +526,7 @@ export default function Dashboard() {
         <Footer />
       </div>
 
+      <Welcome onTour={() => setTouring(true)} />
       {touring ? <Tour steps={tourSteps} onStep={onTourStep} onClose={() => setTouring(false)} /> : null}
       {!touring ? (
         <button
@@ -525,7 +551,7 @@ export default function Dashboard() {
   );
 }
 
-function Stat({ label, value, num, format, sub, accent, spark }: { label: string; value?: string; num?: number; format?: (v: number) => string; sub?: string; accent?: boolean; spark?: number[] }) {
+function Stat({ label, value, num, format, sub, accent, spark }: { label: React.ReactNode; value?: string; num?: number; format?: (v: number) => string; sub?: string; accent?: boolean; spark?: number[] }) {
   // weekly sparkline of the last two years
   let path = "";
   if (spark && spark.length > 14) {
