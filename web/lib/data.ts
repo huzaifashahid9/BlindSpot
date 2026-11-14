@@ -10,6 +10,8 @@ export type Region = {
   frp?: number;
   unusual_days?: number;
   unusual_days_lost?: number;
+  /** unusual days inside the all-five window, the base for unusual_days_lost */
+  unusual_days_window?: number;
   only_snpp_share?: number;
   trust_with_snpp?: number;
   trust_now?: number;

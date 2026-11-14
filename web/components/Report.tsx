@@ -66,7 +66,7 @@ export default function Report() {
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           ["Harmonized fire events", fmt(Math.round(region.events_h ?? region.events ?? 0))],
-          ["Unusual days", fmt(region.unusual_days), `${fmt(region.unusual_days_lost)} lost without Suomi NPP`],
+          ["Unusual days", fmt(region.unusual_days), `${fmt(region.unusual_days_lost)} of ${fmt(region.unusual_days_window ?? region.unusual_days)} since Nov 2023 lost without Suomi NPP`],
           ["Seen only by Suomi NPP", pct(region.only_snpp_share)],
           ["Trust Score now", region.trust_now !== undefined ? `${region.trust_now} / 100` : "n/a"],
         ].map(([k, v, sub]) => (

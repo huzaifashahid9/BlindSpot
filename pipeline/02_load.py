@@ -69,6 +69,9 @@ def conf_class(row_conf: pd.Series, sensor: pd.Series) -> pd.Series:
     return out
 
 
+BORDER_DEG = 0.14  # about 15 km
+
+
 def main():
     df = pd.concat(read_frames(), ignore_index=True)
     for c in COLS:
@@ -102,6 +105,15 @@ def main():
     reps = adm2.copy()
     reps["geometry"] = adm2.geometry.representative_point()
     adm2 = adm2.merge(gpd.sjoin(reps, adm1, predicate="within")[["district_id", "province"]], on="district_id", how="left")
+
+    # The full-history download covers a rectangle that is two thirds India, Afghanistan and Iran.
+    # Keep Pakistan plus a ~15 km border strip (border fires still matter for districts next to it).
+    n0 = len(df)
+    border = gpd.GeoSeries([adm2.geometry.union_all().buffer(BORDER_DEG)], crs="EPSG:4326")
+    near = gpd.GeoDataFrame(geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:4326").sjoin(
+        gpd.GeoDataFrame(geometry=border), predicate="within", how="inner")
+    df = df.iloc[np.sort(near.index.unique())].reset_index(drop=True)
+    print(f"kept {len(df):,} of {n0:,} detections within ~15 km of Pakistan")
 
     pts = gpd.GeoDataFrame(df[["latitude"]].copy(), geometry=gpd.points_from_xy(df.longitude, df.latitude), crs="EPSG:4326")
     j = gpd.sjoin(pts, adm2[["district_id", "district", "province", "geometry"]], predicate="within", how="left")
