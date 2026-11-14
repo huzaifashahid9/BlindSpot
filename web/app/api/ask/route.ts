@@ -3,8 +3,9 @@
 import { GoogleGenAI, type Content, type FunctionDeclaration } from "@google/genai";
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-// Used if the main model is not available on the key (404 / not found).
-const FALLBACK_MODEL = "gemini-2.5-flash";
+// Tried in order when a model is missing (404) or overloaded (503 / UNAVAILABLE).
+const MODELS = [...new Set([MODEL, "gemini-2.5-flash", "gemini-2.5-flash-lite"])];
+const RETRYABLE = /404|NOT_FOUND|not found|not supported|503|UNAVAILABLE|overloaded|high demand|500|INTERNAL/i;
 const MAX_ROUNDS = 5;
 
 // Gemini plus tool calls can take a while; the platform default may be shorter.
@@ -149,7 +150,7 @@ function numbersOk(answer: string, toolText: string) {
 
 // Health check: open /api/ask in a browser to see whether the key is set and which model is used.
 export async function GET() {
-  return Response.json({ configured: Boolean(process.env.GEMINI_API_KEY), model: MODEL });
+  return Response.json({ configured: Boolean(process.env.GEMINI_API_KEY), models: MODELS });
 }
 
 export async function POST(req: Request) {
@@ -171,18 +172,22 @@ export async function POST(req: Request) {
 
   const used: string[] = [];
   let toolText = "";
-  let model = MODEL;
+  let mi = 0;
   try {
     for (let attempt = 0; attempt < 2; attempt++) {
       for (let round = 0; round < MAX_ROUNDS; round++) {
         const config = { systemInstruction: SYSTEM, tools: [{ functionDeclarations: tools }], temperature: 0.2 };
         let res;
-        try {
-          res = await ai.models.generateContent({ model, contents, config });
-        } catch (e) {
-          if (model === FALLBACK_MODEL || !/404|NOT_FOUND|not found|not supported/i.test(String(e))) throw e;
-          model = FALLBACK_MODEL;
-          res = await ai.models.generateContent({ model, contents, config });
+        for (let tries = 0; ; tries++) {
+          try {
+            res = await ai.models.generateContent({ model: MODELS[mi], contents, config });
+            break;
+          } catch (e) {
+            if (!RETRYABLE.test(String(e)) || tries >= 4) throw e;
+            // first retry the same model after a short pause, then move down the list
+            if (tries % 2 === 1 && mi < MODELS.length - 1) mi++;
+            await new Promise((r) => setTimeout(r, 600 * (tries + 1)));
+          }
         }
         const calls = res.functionCalls ?? [];
         if (calls.length === 0) {
@@ -211,6 +216,13 @@ export async function POST(req: Request) {
   } catch (e) {
     const msg = String(e);
     const limited = /429|RESOURCE_EXHAUSTED|quota/i.test(msg);
-    return Response.json({ error: limited ? "The assistant is busy (rate limit). Try again in a minute." : "The assistant failed to answer. Try again." , detail: limited ? undefined : msg.slice(0, 200) }, { status: limited ? 429 : 500 });
+    const busy = /503|UNAVAILABLE|overloaded|high demand/i.test(msg);
+    return Response.json(
+      {
+        error: limited ? "The assistant is busy (rate limit). Try again in a minute." : busy ? "Gemini is overloaded right now. Try again in a few seconds." : "The assistant failed to answer. Try again.",
+        detail: limited || busy ? undefined : msg.slice(0, 200),
+      },
+      { status: limited ? 429 : busy ? 503 : 500 },
+    );
   }
 }
