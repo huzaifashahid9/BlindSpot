@@ -1,0 +1,1 @@
+{"date":"2002-06-24","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[27.807,67.5907,23.4,0.48,"Terra","Qambar Shahdadkot",0,57.2,0.0,1,"10:38","10:38","modis_only"]]}

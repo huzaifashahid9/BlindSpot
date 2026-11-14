@@ -1,0 +1,1 @@
+{"date":"2002-07-24","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[26.3168,68.7594,26.0,0.65,"Aqua","Nawabshah",0,43.1,0.0,1,"13:59","13:59","modis_only"]]}

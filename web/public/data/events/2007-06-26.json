@@ -1,0 +1,1 @@
+{"date":"2007-06-26","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[28.9057,75.1167,14.5,0.48,"Terra",null,0,27.3,0.0,1,"10:11","10:11","modis_only"],[29.0516,70.5194,17.8,0.52,"Terra","Muzaffargarh",0,43.5,0.0,1,"11:49","11:49","modis_only"]]}

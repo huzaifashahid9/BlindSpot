@@ -1,0 +1,1 @@
+{"date":"2008-06-20","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[34.5486,73.3506,3.4,0.48,"Terra","Mansehra",1,5.3,0.0,1,"10:59","10:59","modis_only"],[27.6621,67.6954,7.3,0.48,"Terra","Qambar Shahdadkot",0,12.1,0.0,1,"11:01","11:01","modis_only"]]}

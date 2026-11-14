@@ -1,0 +1,1 @@
+{"date":"2003-09-03","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[31.1521,73.582,7.7,0.52,"Aqua","Sheikhpura",0,12.1,0.0,1,"13:21","13:21","modis_only"]]}

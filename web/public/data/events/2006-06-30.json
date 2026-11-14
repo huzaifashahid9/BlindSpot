@@ -1,0 +1,1 @@
+{"date":"2006-06-30","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[25.102,62.3034,20.6,0.48,"Aqua","Gwadar",0,50.5,0.0,1,"13:28","13:28","modis_only"],[27.7614,68.7186,10.3,0.65,"Terra","Shikarpur",0,17.0,0.0,1,"22:54","22:54","modis_only"]]}

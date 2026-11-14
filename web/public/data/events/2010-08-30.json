@@ -1,0 +1,1 @@
+{"date":"2010-08-30","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[31.0188,74.3578,3.6,0.48,"Aqua","Kasur",0,5.6,0.0,1,"13:18","13:18","modis_only"],[30.9535,74.3493,4.0,0.48,"Aqua","Kasur",0,6.3,0.0,1,"13:18","13:18","modis_only"]]}

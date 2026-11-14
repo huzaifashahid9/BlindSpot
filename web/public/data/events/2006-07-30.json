@@ -1,0 +1,1 @@
+{"date":"2006-07-30","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[33.9317,71.6198,10.9,0.48,"Aqua","Peshawar",0,18.0,0.0,1,"13:43","13:43","modis_only"]]}

@@ -1,0 +1,1 @@
+{"date":"2007-07-24","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[27.7812,68.9634,7.7,0.48,"Aqua","Sukkur",0,12.0,0.0,1,"13:47","13:47","modis_only"]]}

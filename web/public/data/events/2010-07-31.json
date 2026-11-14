@@ -1,0 +1,1 @@
+{"date":"2010-07-31","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[25.7496,68.3172,7.8,0.48,"Terra","Jamshoro",0,15.1,0.0,1,"11:32","11:32","modis_only"],[34.0392,62.6892,25.6,0.48,"Aqua",null,0,62.6,0.0,1,"14:46","14:46","modis_only"]]}

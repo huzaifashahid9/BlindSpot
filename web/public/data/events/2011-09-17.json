@@ -1,0 +1,1 @@
+{"date":"2011-09-17","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[26.4802,69.7045,8.9,0.52,"Terra","Khairpur",0,14.0,0.0,1,"11:01","11:01","modis_only"]]}

@@ -1,0 +1,1 @@
+{"date":"2005-07-03","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[28.0549,69.3628,3.9,0.48,"Terra","Ghotki",1,6.4,0.0,1,"22:17","22:17","modis_only"]]}

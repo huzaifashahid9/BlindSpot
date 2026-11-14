@@ -1,0 +1,1 @@
+{"date":"2008-06-25","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[33.6277,72.0866,12.3,0.48,"Terra","Attock",0,20.4,0.0,1,"11:18","11:18","modis_only"],[27.9543,67.5848,12.8,0.48,"Terra","Jhal Magsi",0,20.0,0.0,1,"11:20","11:20","modis_only"]]}

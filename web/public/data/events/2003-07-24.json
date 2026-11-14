@@ -1,0 +1,1 @@
+{"date":"2003-07-24","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[27.6826,77.7464,10.9,0.48,"Aqua",null,0,21.0,0.0,1,"13:26","13:26","modis_only"],[29.1016,71.2924,8.9,0.48,"Aqua","Bahawalpur",0,13.9,0.0,1,"13:26","13:26","modis_only"]]}

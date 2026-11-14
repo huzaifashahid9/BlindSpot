@@ -1,0 +1,1 @@
+{"date":"2009-08-30","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[31.0772,62.0513,3.9,0.48,"Aqua",null,0,6.1,0.0,1,"02:52","02:52","modis_only"],[27.6541,67.666,10.2,0.48,"Aqua","Qambar Shahdadkot",0,16.0,0.0,1,"13:51","13:51","modis_only"]]}

@@ -1,0 +1,1 @@
+{"date":"2007-07-03","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[32.1472,70.9614,23.1,0.48,"Terra","Dera Ismail Khan",0,56.5,0.0,1,"10:17","10:17","modis_only"],[30.8126,73.1587,5.4,0.48,"Aqua","Sahiwal",0,8.4,0.0,1,"13:30","13:30","modis_only"]]}

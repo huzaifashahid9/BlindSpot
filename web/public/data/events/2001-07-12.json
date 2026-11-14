@@ -1,0 +1,1 @@
+{"date":"2001-07-12","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[35.8283,75.517,6.7,0.52,"Terra","Shigar",0,10.5,0.0,1,"11:00","11:00","modis_only"],[35.3273,74.0534,5.2,0.48,"Terra","Diamer",0,8.6,0.0,1,"22:03","22:03","modis_only"]]}

@@ -1,0 +1,1 @@
+{"date":"2007-02-09","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[23.5287,79.2344,13.3,0.48,"Aqua",null,0,25.7,0.0,1,"13:28","13:28","modis_only"],[28.6839,70.1507,9.2,0.48,"Aqua","Rahim Yar Khan",0,14.4,0.0,1,"13:30","13:30","modis_only"]]}

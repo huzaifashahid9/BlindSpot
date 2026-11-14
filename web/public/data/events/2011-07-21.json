@@ -1,0 +1,1 @@
+{"date":"2011-07-21","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[24.9688,67.2119,6.2,0.48,"Aqua","Karachi",1,10.2,0.0,1,"13:35","13:35","modis_only"]]}

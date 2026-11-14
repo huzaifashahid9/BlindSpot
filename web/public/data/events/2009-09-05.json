@@ -1,0 +1,1 @@
+{"date":"2009-09-05","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[28.6576,69.2186,4.2,0.48,"Aqua","Dera Bugti",0,6.5,0.0,1,"02:16","02:16","modis_only"],[25.1046,62.0772,6.0,0.52,"Terra",null,0,9.4,0.0,1,"11:39","11:39","modis_only"]]}

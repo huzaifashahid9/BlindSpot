@@ -1,0 +1,1 @@
+{"date":"2011-08-24","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[25.3878,68.5842,2.7,0.48,"Aqua","Hyderabad",1,4.3,0.0,1,"02:25","02:25","modis_only"]]}

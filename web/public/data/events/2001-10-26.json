@@ -1,0 +1,1 @@
+{"date":"2001-10-26","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[35.3979,73.085,13.9,0.65,"Terra","Kohistan",0,23.0,0.0,1,"22:37","22:37","modis_only"]]}

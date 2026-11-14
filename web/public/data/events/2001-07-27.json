@@ -1,0 +1,1 @@
+{"date":"2001-07-27","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[32.1097,71.566,27.6,0.48,"Terra","Bhakkar",0,67.6,0.0,1,"11:56","11:56","modis_only"],[28.1862,68.4519,15.5,0.52,"Terra","Jacobabad",1,38.0,0.0,1,"11:58","11:58","modis_only"]]}

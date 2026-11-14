@@ -1,0 +1,1 @@
+{"date":"2002-06-03","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[28.0681,67.8274,5.6,0.48,"Terra","Jafarabad",0,9.3,0.0,1,"22:56","22:56","modis_only"]]}

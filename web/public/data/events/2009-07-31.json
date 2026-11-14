@@ -1,0 +1,1 @@
+{"date":"2009-07-31","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[35.1064,73.0738,9.7,0.48,"Aqua","Kohistan",0,16.0,0.0,1,"13:41","13:41","modis_only"]]}

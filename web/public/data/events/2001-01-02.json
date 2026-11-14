@@ -1,0 +1,1 @@
+{"date":"2001-01-02","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[24.5625,67.8861,7.9,0.48,"Terra","Thatta",0,15.3,0.0,1,"11:51","11:51","modis_only"],[25.7276,68.72,27.6,0.48,"Terra","Sanghar",0,52.0,0.0,1,"11:51","11:51","modis_only"]]}

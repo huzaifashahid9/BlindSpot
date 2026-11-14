@@ -1,0 +1,1 @@
+{"date":"2008-08-15","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[30.2193,73.7594,8.4,0.48,"Aqua","Bahawalnagar",0,13.2,0.0,1,"13:25","13:25","modis_only"],[31.2664,61.8742,5.0,0.48,"Terra",null,0,7.9,0.0,1,"22:50","22:50","modis_only"]]}

@@ -1,0 +1,1 @@
+{"date":"2007-07-07","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[33.931,71.6198,9.3,0.48,"Terra","Peshawar",0,18.0,0.0,1,"11:30","11:30","modis_only"]]}

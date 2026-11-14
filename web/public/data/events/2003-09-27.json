@@ -1,0 +1,1 @@
+{"date":"2003-09-27","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[24.2447,68.7245,8.6,0.52,"Aqua","Thatta",0,16.2,0.0,1,"14:08","14:08","modis_only"],[35.6326,60.0557,6.2,0.48,"Aqua",null,0,9.7,0.0,1,"14:12","14:12","modis_only"]]}

@@ -1,0 +1,1 @@
+{"date":"2001-08-05","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[32.1536,74.1888,19.3,0.52,"Terra","Gujranwala",1,47.3,0.0,1,"10:12","10:12","modis_only"],[34.891,65.9444,7.7,0.48,"Terra",null,0,12.1,0.0,1,"11:50","11:50","modis_only"]]}

@@ -1,0 +1,1 @@
+{"date":"2007-07-29","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[31.1469,73.6649,5.6,0.48,"Terra","Sheikhpura",0,8.8,0.0,1,"10:54","10:54","modis_only"]]}

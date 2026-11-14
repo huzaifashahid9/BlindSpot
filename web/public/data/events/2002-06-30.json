@@ -1,0 +1,1 @@
+{"date":"2002-06-30","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[28.2405,69.0401,3.4,0.48,"Terra","Kashmore",0,5.3,0.0,1,"22:38","22:38","modis_only"]]}

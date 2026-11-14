@@ -1,0 +1,1 @@
+{"date":"2008-06-23","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[28.0639,68.6621,4.3,0.48,"Terra","Shikarpur",0,6.8,0.0,1,"22:30","22:30","modis_only"],[28.4375,68.506,5.8,0.65,"Terra","Jafarabad",0,9.0,0.0,1,"22:31","22:31","modis_only"]]}

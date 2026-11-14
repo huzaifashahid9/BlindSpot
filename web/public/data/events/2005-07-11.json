@@ -1,0 +1,1 @@
+{"date":"2005-07-11","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[36.2833,62.6565,3.1,0.48,"Aqua",null,0,4.9,0.0,1,"02:38","02:38","modis_only"],[36.4675,60.8482,5.4,0.48,"Terra",null,1,8.4,0.0,1,"23:09","23:09","modis_only"]]}

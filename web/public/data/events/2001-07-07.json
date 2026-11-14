@@ -1,0 +1,1 @@
+{"date":"2001-07-07","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[32.8919,71.2815,20.3,0.52,"Terra","Mianwali",0,38.1,0.0,1,"10:43","10:43","modis_only"],[23.7312,70.502,10.2,0.52,"Terra",null,0,19.7,0.0,1,"10:45","10:45","modis_only"]]}

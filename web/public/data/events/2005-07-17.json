@@ -1,0 +1,1 @@
+{"date":"2005-07-17","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[25.4547,68.7317,4.4,0.48,"Terra","Tando Allahyar",0,6.9,0.0,1,"22:29","22:29","modis_only"]]}

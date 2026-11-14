@@ -1,0 +1,1 @@
+{"date":"2006-09-12","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[30.6071,73.8746,4.1,0.48,"Terra","Okara",1,6.4,0.0,1,"10:53","10:53","modis_only"]]}

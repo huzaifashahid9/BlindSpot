@@ -1,0 +1,1 @@
+{"date":"2002-06-23","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[30.6394,72.3916,16.7,0.48,"Terra","Toba Tek Singh",0,31.4,0.0,1,"11:32","11:32","modis_only"]]}

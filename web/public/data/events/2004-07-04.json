@@ -1,0 +1,1 @@
+{"date":"2004-07-04","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[32.2379,74.0783,4.5,0.48,"Terra","Gujranwala",1,7.1,0.0,1,"10:53","10:53","modis_only"],[27.9654,67.6153,14.3,0.48,"Aqua","Jhal Magsi",0,27.7,0.0,1,"14:04","14:04","modis_only"]]}

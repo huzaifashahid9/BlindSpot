@@ -1,0 +1,1 @@
+{"date":"2005-09-18","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[28.209,76.7725,4.7,0.48,"Terra",null,0,7.4,0.0,1,"10:47","10:47","modis_only"],[28.0364,68.2791,10.5,0.48,"Aqua","Jacobabad",1,17.4,0.0,1,"13:56","13:56","modis_only"]]}

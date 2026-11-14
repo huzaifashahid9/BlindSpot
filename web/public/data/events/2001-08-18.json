@@ -1,0 +1,1 @@
+{"date":"2001-08-18","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[32.6705,73.5142,8.2,0.52,"Terra","Jhelum",0,13.5,0.0,1,"11:19","11:19","modis_only"]]}

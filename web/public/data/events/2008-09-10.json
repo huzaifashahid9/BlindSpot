@@ -1,0 +1,1 @@
+{"date":"2008-09-10","fields":["lat","lon","frp","conf","sats","district","persistent","raw_modis_frp","raw_viirs_frp","n_det","first_pkt","last_pkt","seen_by"],"rows":[[30.5198,73.5317,3.6,0.48,"Terra","Pakpattan",0,5.7,0.0,1,"10:48","10:48","modis_only"]]}
