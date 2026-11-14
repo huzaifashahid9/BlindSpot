@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN
 from sklearn.neighbors import BallTree
+from tqdm import tqdm
 
 from common import EARTH_KM, PROC
 
@@ -143,18 +144,18 @@ def common_confidence(det: pd.DataFrame) -> dict:
     d["tmin"] = ((d.ts_utc - d.ts_utc.dt.normalize()).dt.total_seconds() // 60).astype(int)
     d["satn"] = d.satellite.astype("category").cat.codes
     confirmed = np.zeros(len(d), dtype=bool)
-    pos = np.arange(len(d))
-    d["pos"] = pos
-    for _dte, g in d.groupby("acq_date"):
+    overhead = np.zeros(len(d), dtype=bool)
+    d["pos"] = np.arange(len(d))
+    # one day at a time, so memory stays small even for 25 years of detections
+    for _dte, g in tqdm(d.groupby("acq_date"), desc="confidence", unit="day"):
         i, j = radius_pairs(rad(g), 1.0 / EARTH_KM)
         sat, tm = g.satn.to_numpy(), g.tmin.to_numpy()
         m = (sat[i] != sat[j]) & (np.abs(tm[i] - tm[j]) <= CONF_WINDOW_MIN)
         confirmed[g.pos.to_numpy()[np.unique(i[m])]] = True
-    passes = d[["acq_date", "cell", "satn", "tmin"]].assign(tbin=d.tmin // 5 * 5).drop_duplicates(["acq_date", "cell", "satn", "tbin"])
-    mm = d[["pos", "acq_date", "cell", "satn", "tmin"]].merge(passes, on=["acq_date", "cell"], suffixes=("", "_p"))
-    mm = mm[(mm.satn != mm.satn_p) & ((mm.tmin - mm.tmin_p).abs() <= CONF_WINDOW_MIN)]
-    overhead = np.zeros(len(d), dtype=bool)
-    overhead[mm.pos.unique()] = True
+        passes = g[["cell", "satn", "tmin"]].assign(tbin=g.tmin // 5 * 5).drop_duplicates(["cell", "satn", "tbin"])
+        mm = g[["pos", "cell", "satn", "tmin"]].merge(passes, on="cell", suffixes=("", "_p"))
+        mm = mm[(mm.satn != mm.satn_p) & ((mm.tmin - mm.tmin_p).abs() <= CONF_WINDOW_MIN)]
+        overhead[mm.pos.unique()] = True
     d["overhead"], d["confirmed"] = overhead, confirmed
     out = {}
     for (sensor, cls), g in d[d.overhead].groupby(["sensor", "conf_class"]):
@@ -167,7 +168,7 @@ def fuse_events(det: pd.DataFrame) -> pd.Series:
     labels = np.full(len(det), -1, dtype=np.int64)
     d = det[~det.dup]
     offset = 0
-    for _day, g in d.groupby("local_date"):
+    for _day, g in tqdm(d.groupby("local_date"), desc="fusing events", unit="day"):
         lab = DBSCAN(eps=EVENT_EPS_KM / EARTH_KM, min_samples=1, metric="haversine").fit_predict(rad(g))
         labels[g.index.to_numpy()] = lab + offset
         offset += lab.max() + 1
