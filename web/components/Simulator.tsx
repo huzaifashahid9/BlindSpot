@@ -52,7 +52,8 @@ export default function Simulator({ region, regions, custom, from, to, areaName 
   useEffect(() => {
     getIndex().then(async (ix) => {
       setIdx(ix);
-      setYears(await loadYears(ix.years));
+      // only the years of the all-five window, not the whole 2000s history
+      setYears(await loadYears(ix.years.filter((y) => y >= Number(from.slice(0, 4)) && y <= Number(to.slice(0, 4)))));
     });
     fetch("/data/districts.geojson")
       .then((r) => r.json())
@@ -66,6 +67,7 @@ export default function Simulator({ region, regions, custom, from, to, areaName 
         setOutline(rings);
       })
       .catch(() => setOutline(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const pts = useMemo(() => {
