@@ -14,11 +14,15 @@ import NextPass from "@/components/NextPass";
 import { addDays, CalendarFile, fmt, getJSON, HarmonizationFile, LostEyesFile, PassesFile, pct, Region, RegionsFile } from "@/lib/data";
 import { buildCalendar, getIndex, loadYears, lostEyesFor } from "@/lib/points";
 import Icon from "@/components/Icon";
+import { CountUp, Reveal } from "@/components/Motion";
+import type { TourStep } from "@/components/Tour";
 
 const DayMap = dynamic(() => import("@/components/DayMap"), { ssr: false, loading: () => <div className="h-[420px] rounded-xl bg-slate-900" /> });
 const Hero = dynamic(() => import("@/components/Hero"), { ssr: false, loading: () => <div className="-mx-4 min-h-[86vh] md:mx-0" /> });
 
 const Simulator = dynamic(() => import("@/components/Simulator"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
+const SeasonRace = dynamic(() => import("@/components/SeasonRace"), { ssr: false });
+const Tour = dynamic(() => import("@/components/Tour"), { ssr: false });
 const Live = dynamic(() => import("@/components/Live"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
 
 const TABS = [
@@ -158,6 +162,56 @@ export default function Dashboard() {
     history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}#${tab}`);
   }, [regionId, date, tab]);
   const [copied, setCopied] = useState(false);
+  const [touring, setTouring] = useState(false);
+
+  // cursor spotlight on cards
+  useEffect(() => {
+    const move = (e: PointerEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.(".spot, .hud-card") as HTMLElement | null;
+      if (!el) return;
+      const b = el.getBoundingClientRect();
+      el.style.setProperty("--mx", `${e.clientX - b.left}px`);
+      el.style.setProperty("--my", `${e.clientY - b.top}px`);
+    };
+    window.addEventListener("pointermove", move, { passive: true });
+    return () => window.removeEventListener("pointermove", move);
+  }, []);
+
+  const pak = regions?.regions.find((r) => r.id === "PAK");
+  const topDistrict = useMemo(
+    () => regions?.regions.filter((r) => r.level === "district" && (r.events ?? 0) >= 500).sort((a, b) => (b.only_snpp_share ?? 0) - (a.only_snpp_share ?? 0))[0],
+    [regions],
+  );
+  const modisEra = harm?.eras.find((e) => e.constellation === "Terra+Aqua" || e.label.toLowerCase().includes("modis"));
+  const facts = [
+    `Suomi NPP stopped on 2 Nov 2026`,
+    pak?.only_snpp_share ? `${(pak.only_snpp_share * 100).toFixed(1)}% of Pakistan's fire events were seen by Suomi NPP alone` : null,
+    pak?.unusual_days ? `${pak.unusual_days} unusual burning days since Nov 2023, ${pak.unusual_days_lost} of them vanish without Suomi NPP` : null,
+    topDistrict ? `${topDistrict.name} loses the most: ${((topDistrict.only_snpp_share ?? 0) * 100).toFixed(0)}% of its fires were Suomi NPP only` : null,
+    modisEra?.monthly_error_raw && modisEra.monthly_error_harmonized
+      ? `Harmonization cuts monthly count error in MODIS-only years from ${Math.round(modisEra.monthly_error_raw * 100)}% to ${Math.round(modisEra.monthly_error_harmonized * 100)}%`
+      : null,
+    pak?.events_h ? `${fmt(Math.round(pak.events_h))} harmonized fire events from five satellites` : null,
+    `No satellite is watching Pakistan for hours every day: see the Blind Clock`,
+  ].filter(Boolean) as string[];
+
+  const tourSteps: TourStep[] = [
+    { tab: "calendar", target: "top", title: "One fire record, five satellites", text: "BlindSpot fuses every MODIS and VIIRS hot spot over Pakistan into one consistent record. The time-lapse replays this rice season, and Suomi NPP goes dark on 2 November." },
+    { tab: "calendar", target: "explore", title: "The burning calendar", text: "Every square is a day. Colours are harmonized fire events, cyan outlines mark unusual days. Pick any district at the top and everything below follows it." },
+    { tab: "sim", target: "explore", title: "Switch satellites off", text: `Turn any satellite off and every fire event is recounted live. Without Suomi NPP, ${pak?.only_snpp_share ? (pak.only_snpp_share * 100).toFixed(1) + "%" : "a fifth"} of the record disappears. Try Terra and Aqua retiring too.` },
+    { tab: "lost", target: "explore", title: "Lost Eyes", text: "Which fires only one satellite saw, month by month, by fire size, and which districts lose the most now that Suomi NPP is gone." },
+    { tab: "history", target: "explore", title: "Season race and outlook", text: "Each season's running total races the previous ones, and a 14-day outlook says what this area's own history makes likely next." },
+    { tab: "clock", target: "explore", title: "The Blind Clock", text: "The hours of the day when no satellite passes over, and a live countdown to the next pass for the selected district." },
+    { tab: "live", target: "explore", title: "Live now", text: "Today's fires from NASA FIRMS, fused the same way, compared with each district's own history to raise alerts." },
+    { tab: "ask", target: "explore", title: "Ask the data", text: "An AI analyst on Gemini that answers from the data with tools, and checks every number it says against the data before you see it." },
+  ];
+  const onTourStep = (st: TourStep) => {
+    go(st.tab as Tab);
+    setTimeout(() => {
+      if (st.target === "top") window.scrollTo({ top: 0, behavior: "smooth" });
+      else document.getElementById(st.target ?? "explore")?.scrollIntoView({ behavior: "smooth" });
+    }, 120);
+  };
 
   const go = (t: Tab) => {
     setTab(t);
@@ -166,6 +220,11 @@ export default function Dashboard() {
 
   return (
     <div className="hud-grid min-h-screen">
+      <div className="aurora" aria-hidden>
+        <span />
+        <span />
+        <span />
+      </div>
       <div className="mx-auto w-full max-w-7xl px-4 pb-16">
         <Hero onlySnppShare={le?.regions.PAK.only_share.SNPP ?? null} onlySnpp={le?.regions.PAK.only.SNPP ?? null} />
 
@@ -244,14 +303,33 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {facts.length ? (
+          <div className="relative -mx-4 overflow-hidden border-b border-slate-800/60 bg-slate-950/40 py-2 [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
+            <div className="marquee">
+              {[0, 1].map((k) => (
+                <div key={k} className="flex shrink-0 items-center" aria-hidden={k === 1}>
+                  {facts.map((f) => (
+                    <span key={f} className="flex items-center whitespace-nowrap px-6 font-mono text-xs text-slate-400">
+                      <span className="mr-3 inline-block h-1.5 w-1.5 rounded-full bg-orange-400" />
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         {stats ? (
           <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat label={`Harmonized fire events, ${years}`} value={fmt(Math.round(stats.events))} sub={R?.name} />
-            <Stat label="Unusual days" value={fmt(stats.unusual)} sub={`${fmt(stats.lost)} vanish without Suomi NPP`} />
-            <Stat label="Seen only by Suomi NPP" value={pct(stats.only)} accent sub="lost from the record since 2 Nov 2026" />
+            <Stat label={`Harmonized fire events, ${years}`} num={stats.events} format={(v) => fmt(Math.round(v))} sub={R?.name} spark={C ? (C.events_h ?? C.events) : undefined} />
+            <Stat label="Unusual days" num={stats.unusual} format={(v) => fmt(Math.round(v))} sub={`${fmt(stats.lost)} vanish without Suomi NPP`} />
+            <Stat label="Seen only by Suomi NPP" num={stats.only} format={(v) => pct(v)} accent sub="lost from the record since 2 Nov 2026" />
             <Stat
               label="Trust Score (0 to 100)"
-              value={stats.trust !== undefined ? String(stats.trust) : custom ? "area" : "district view"}
+              num={stats.trust}
+              format={(v) => v.toFixed(0)}
+              value={custom ? "area" : "district view"}
               sub={stats.trust !== undefined ? "agreement, coverage, stability, sample size" : custom ? "scored for districts only" : "pick a district"}
             />
           </section>
@@ -260,7 +338,7 @@ export default function Dashboard() {
         )}
         {custom && areaBusy ? <p className="mt-3 text-sm text-orange-300">Computing your area from every fire event…</p> : null}
 
-        <main className="mt-8">
+        <main key={tab} className="tab-enter mt-8">
           {tab === "calendar" ? (
             <div className="space-y-10">
               <section>
@@ -312,7 +390,11 @@ export default function Dashboard() {
                   <DayMap date={date} withoutSnpp={withoutSnpp} focus={focus} districtIds={districtIds} areaName={R?.name} />
                 </section>
               ) : null}
-              {C ? <RawVsHarmonized key={custom ? "custom" : regionId} cal={C} regionName={R?.name ?? "Pakistan"} /> : null}
+              {C ? (
+                <Reveal>
+                  <RawVsHarmonized key={custom ? "custom" : regionId} cal={C} regionName={R?.name ?? "Pakistan"} />
+                </Reveal>
+              ) : null}
             </div>
           ) : null}
           {tab === "live" && passes ? (
@@ -330,6 +412,11 @@ export default function Dashboard() {
                 document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" });
               }}
             />
+          ) : null}
+          {tab === "history" && C ? (
+            <div className="mb-8">
+              <SeasonRace cal={C} regionName={R?.name ?? "Pakistan"} />
+            </div>
           ) : null}
           {tab === "history" ? (C ? <History cal={C} harm={harm} regionName={R?.name ?? ""} /> : <div className="h-64 animate-pulse rounded-2xl bg-slate-900" />) : null}
           {tab === "sim" && le && regions ? (
@@ -369,7 +456,16 @@ export default function Dashboard() {
         </footer>
       </div>
 
-      {tab !== "ask" ? (
+      {touring ? <Tour steps={tourSteps} onStep={onTourStep} onClose={() => setTouring(false)} /> : null}
+      {!touring ? (
+        <button
+          onClick={() => setTouring(true)}
+          className="fixed bottom-5 left-5 z-40 flex items-center gap-2 rounded-full border border-slate-600 bg-slate-950/90 px-4 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-orange-400/70 hover:bg-slate-900"
+        >
+          <Icon name="play" className="h-3.5 w-3.5 text-orange-400" fill /> 60-second tour
+        </button>
+      ) : null}
+      {tab !== "ask" && !touring ? (
         <button
           onClick={() => {
             go("ask");
@@ -384,12 +480,35 @@ export default function Dashboard() {
   );
 }
 
-function Stat({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
+function Stat({ label, value, num, format, sub, accent, spark }: { label: string; value?: string; num?: number; format?: (v: number) => string; sub?: string; accent?: boolean; spark?: number[] }) {
+  // weekly sparkline of the last two years
+  let path = "";
+  if (spark && spark.length > 14) {
+    const w: number[] = [];
+    const from = Math.max(0, spark.length - 728);
+    for (let i = from; i < spark.length; i += 7) w.push(spark.slice(i, i + 7).reduce((a, b) => a + b, 0));
+    const m = Math.max(1, ...w);
+    path = w.map((v, i) => `${i ? "L" : "M"}${(i / (w.length - 1)) * 100},${30 - (v / m) * 28}`).join(" ");
+  }
   return (
-    <div className={`rounded-2xl border p-4 ${accent ? "border-rose-500/40 bg-rose-500/10" : "border-slate-800/80 bg-slate-900/60"}`}>
+    <div className={`spot lift relative overflow-hidden rounded-2xl border p-4 ${path ? "pb-9" : ""} ${accent ? "ring border-rose-500/40 bg-rose-500/10" : "border-slate-800/80 bg-slate-900/60"}`}>
       <p className="hud-label">{label}</p>
-      <p className={`mt-1 font-display text-3xl font-bold ${accent ? "text-rose-200" : "text-white"}`}>{value}</p>
+      <p className={`mt-1 font-display text-3xl font-bold tabular-nums ${accent ? "text-rose-200" : "text-white"}`}>
+        {num !== undefined && format ? <CountUp value={num} format={format} /> : value}
+      </p>
       {sub ? <p className="mt-0.5 text-xs text-slate-500">{sub}</p> : null}
+      {path ? (
+        <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 bottom-0 h-10 w-full opacity-60" aria-hidden>
+          <path d={`${path} L100,32 L0,32 Z`} fill="url(#sparkfill)" />
+          <path d={path} fill="none" stroke="#fb923c" strokeWidth={0.8} vectorEffect="non-scaling-stroke" className="draw" style={{ ["--len" as string]: 400 }} pathLength={400} />
+          <defs>
+            <linearGradient id="sparkfill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stopColor="#f97316" stopOpacity={0.25} />
+              <stop offset="1" stopColor="#f97316" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+        </svg>
+      ) : null}
     </div>
   );
 }

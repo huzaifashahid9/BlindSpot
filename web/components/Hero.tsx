@@ -144,7 +144,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
   const nice = !date ? "" : new Date(date + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
   return (
-    <section className="relative isolate -mx-4 overflow-hidden border-b border-slate-800 md:mx-0 md:rounded-b-3xl">
+    <section className="sweep relative isolate -mx-4 overflow-hidden border-b border-slate-800 md:mx-0 md:rounded-b-3xl">
       <div className="absolute inset-0 -z-10" aria-hidden>
         <div ref={box} className="h-full w-full" />
       </div>
@@ -152,12 +152,12 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-[#05070d] to-transparent" />
 
       <div className="flex min-h-[86vh] flex-col justify-between gap-10 px-4 py-8 md:px-10 md:py-12">
-        <div className="max-w-xl">
+        <div className="max-w-xl [&>*]:[animation:fade-up_0.9s_cubic-bezier(0.2,0.7,0.2,1)_both] [&>*:nth-child(2)]:[animation-delay:0.12s] [&>*:nth-child(3)]:[animation-delay:0.24s] [&>*:nth-child(4)]:[animation-delay:0.36s]">
           <p className="hud-label text-orange-300/90">NASA Space Apps 2026 · Harmonization of MODIS and VIIRS hot spots</p>
           <h1 className="mt-4 font-display text-4xl font-bold leading-[1.05] tracking-tight text-white md:text-6xl">
             One fire record.
             <br />
-            <span className="bg-gradient-to-r from-orange-300 via-orange-500 to-rose-500 bg-clip-text text-transparent">Five satellites.</span>
+            <span className="shimmer bg-gradient-to-r from-orange-300 via-rose-500 to-orange-300 bg-clip-text text-transparent">Five satellites.</span>
             <br />
             One just went dark.
           </h1>
@@ -175,7 +175,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
           </div>
         </div>
 
-        <div className="grid max-w-3xl gap-3 sm:grid-cols-[1.2fr_1fr]">
+        <div className="grid max-w-3xl gap-3 [animation:fade-up_1s_0.5s_cubic-bezier(0.2,0.7,0.2,1)_both] sm:grid-cols-[1.2fr_1fr]">
           <div className="hud-card bg-slate-950/70 p-4 backdrop-blur">
             <div className="flex items-center justify-between">
               <p className="hud-label">Rice season {days?.year ?? ""} · 1 Oct to today</p>
@@ -229,7 +229,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
           </div>
           <button
             onClick={() => setSnppOff(!snppOff)}
-            className={`group rounded-2xl border p-4 text-left transition ${
+            className={`group ring lift rounded-2xl border p-4 text-left transition ${
               snppOff ? "border-rose-400 bg-rose-500/20 shadow-[0_0_40px_-8px_rgba(244,63,94,0.7)]" : "border-rose-500/50 bg-slate-950/70 hover:bg-rose-500/10"
             } backdrop-blur`}
           >

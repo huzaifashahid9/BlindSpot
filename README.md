@@ -13,6 +13,8 @@ On 2 November 2026 NASA stopped Suomi NPP fire data. BlindSpot fuses MODIS (Terr
 | Burning calendar | One square per day of harmonized fire events for Pakistan, a province or any of 126 districts. Unusual days, critical burning weeks, wheat and rice burning seasons, and a click-through map of each day with NASA GIBS imagery. |
 | Lost Eyes | Share of events seen only by each satellite, month by month, by fire size, and the districts that lose the most. |
 | Failure simulator | Switch any of the five satellites off and recount, in the browser, which fire events and unusual days would vanish from the record, mapped and ranked by district. |
+| Season race | Each burning season's running total of fire events raced day by day against earlier seasons, with this season's pace against last year. |
+| 60-second tour | A self-advancing guided walk through the key findings, built for judges. |
 | Blind Clock | When each satellite passes over a region (Pakistan time), the longest unwatched stretch, and how Terra and Aqua are drifting. |
 | Ask BlindSpot | Gemini answers questions from the site's own data via function calling, in English or Urdu. Every number in an answer is checked against the tool results on the server. |
 | Fire history | Month × year heatmap (harmonized or raw), this month vs the historical median, and the harmonization check per satellite era. |
