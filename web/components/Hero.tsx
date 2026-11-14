@@ -8,8 +8,8 @@ import { basemap, WORKER_URL } from "@/lib/basemap";
 import { addDays, fmt } from "@/lib/data";
 import { getIndex, getYear, PointsIndex, SNPP_BIT } from "@/lib/points";
 
-// The time-lapse plays the last complete rice-residue burning season on record.
-const SEASON = { year: 2025, from: "2025-10-01", to: "2025-12-15" };
+// The time-lapse plays the current rice-residue burning season, from 1 October to the latest day on record.
+const SNPP_END = "2026-11-02";
 const TRAIL = 5; // days a fire stays visible
 
 type Props = { onlySnppShare: number | null; onlySnpp: number | null };
@@ -19,7 +19,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
   const map = useRef<MLMap | null>(null);
   const [ready, setReady] = useState(false);
   const [idx, setIdx] = useState<PointsIndex | null>(null);
-  const [days, setDays] = useState<{ d0: number; n: number; all: number[]; lost: number[] } | null>(null);
+  const [days, setDays] = useState<{ d0: number; n: number; all: number[]; lost: number[]; year: number; snpp: number } | null>(null);
   const [cur, setCur] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [snppOff, setSnppOff] = useState(false);
@@ -65,10 +65,20 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
 
   // data
   useEffect(() => {
-    Promise.all([getIndex(), getYear(SEASON.year)]).then(([ix, p]) => {
+    getIndex().then(async (ix) => {
+      const year = ix.years[ix.years.length - 1];
+      let p = await getYear(year);
+      let lastDay = Math.max(...p.day);
+      let y = year;
+      // before October, show last year's season instead
+      if (Number(addDays(ix.start, lastDay).slice(5, 7)) < 10 && ix.years.length > 1) {
+        y = ix.years[ix.years.length - 2];
+        p = await getYear(y);
+        lastDay = Math.round((Date.parse(`${y}-12-31`) - Date.parse(ix.start)) / 864e5);
+      }
       setIdx(ix);
-      const d0 = Math.round((Date.parse(SEASON.from) - Date.parse(ix.start)) / 864e5);
-      const d1 = Math.round((Date.parse(SEASON.to) - Date.parse(ix.start)) / 864e5);
+      const d0 = Math.round((Date.parse(`${y}-10-01`) - Date.parse(ix.start)) / 864e5);
+      const d1 = lastDay;
       const n = d1 - d0 + 1;
       const all = new Array(n).fill(0), lost = new Array(n).fill(0);
       const feats: GeoJSON.Feature<GeoJSON.Point, { d: number; s: number }>[] = [];
@@ -80,7 +90,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
         lost[d - d0] += s;
         feats.push({ type: "Feature" as const, geometry: { type: "Point" as const, coordinates: [p.lon[i] / ix.scale.lon, p.lat[i] / ix.scale.lat] }, properties: { d: d - d0, s } });
       }
-      setDays({ d0, n, all, lost });
+      setDays({ d0, n, all, lost, year: y, snpp: Math.round((Date.parse(SNPP_END) - Date.parse(ix.start)) / 864e5) - d0 });
       const set = () => (map.current?.getSource("fires") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: feats });
       if (map.current?.getSource("fires")) set();
       else map.current?.once("load", () => setTimeout(set, 0));
@@ -101,7 +111,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
         }
         return c + 1;
       });
-    }, 140);
+    }, 220);
     return () => clearInterval(t);
   }, [playing, days]);
 
@@ -127,9 +137,10 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
     return { all, lost };
   }, [days, cur]);
 
-  const date = idx && days ? addDays(idx.start, days.d0 + cur) : SEASON.from;
+  const date = idx && days ? addDays(idx.start, days.d0 + cur) : "";
+  const dark = days ? cur > days.snpp : false;
   const shown = snppOff ? totals.all - totals.lost : totals.all;
-  const nice = new Date(date + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const nice = !date ? "" : new Date(date + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
   return (
     <section className="relative isolate -mx-4 overflow-hidden border-b border-slate-800 md:mx-0 md:rounded-b-3xl">
@@ -166,7 +177,7 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
         <div className="grid max-w-3xl gap-3 sm:grid-cols-[1.2fr_1fr]">
           <div className="hud-card bg-slate-950/70 p-4 backdrop-blur">
             <div className="flex items-center justify-between">
-              <p className="hud-label">Rice season 2025 · last one all 5 satellites watched</p>
+              <p className="hud-label">Rice season {days?.year ?? ""} · 1 Oct to today</p>
               <button
                 onClick={() => {
                   if (days && cur >= days.n - 1) setCur(0);
@@ -178,7 +189,20 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
                 {playing ? "❚❚ pause" : "▶ play"}
               </button>
             </div>
-            <p className="mt-1 font-mono text-2xl text-white">{nice}</p>
+            <p className="mt-1 flex items-center gap-2 font-mono text-2xl text-white">
+              {nice}
+              {dark ? (
+                <span className="rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-semibold tracking-widest text-rose-300">SUOMI NPP DARK</span>
+              ) : null}
+            </p>
+            <div className="relative">
+            {days && days.snpp > 0 && days.snpp < days.n ? (
+              <span
+                className="pointer-events-none absolute top-1 z-10 h-5 w-0.5 bg-rose-500"
+                style={{ left: `${(days.snpp / Math.max(1, days.n - 1)) * 100}%` }}
+                title="2 Nov 2026: Suomi NPP stops"
+              />
+            ) : null}
             <input
               type="range"
               min={0}
@@ -191,10 +215,14 @@ export default function Hero({ onlySnppShare, onlySnpp }: Props) {
               className="mt-2 w-full accent-orange-500"
               aria-label="Day of the season"
             />
+            </div>
             <p className="mt-1 text-sm text-slate-300">
               <span className="font-mono text-xl font-semibold text-orange-300">{fmt(shown)}</span> fires recorded since 1 Oct
               {snppOff ? (
                 <span className="block font-mono text-rose-300">−{fmt(totals.lost)} fires no other satellite saw</span>
+              ) : null}
+              {dark && !snppOff ? (
+                <span className="block text-xs text-rose-300/90">Since 2 Nov, fires only Suomi NPP would have caught go unrecorded.</span>
               ) : null}
             </p>
           </div>

@@ -254,7 +254,7 @@ export async function POST(req: Request) {
           const out = await runTool(origin, c.name ?? "", (c.args ?? {}) as Json).catch((e) => ({ error: String(e) }));
           used.push(c.name ?? "");
           toolText += JSON.stringify(out) + "\n";
-          parts.push({ functionResponse: { id: c.id, name: c.name, response: { output: out } } });
+          parts.push({ functionResponse: { ...(c.id ? { id: c.id } : {}), name: c.name, response: { output: out } } });
         }
         contents.push({ role: "user", parts });
       }
@@ -262,12 +262,13 @@ export async function POST(req: Request) {
     return Response.json({ answer: "I could not finish looking that up. Try a more specific question.", checked: false, tools: [...new Set(used)] });
   } catch (e) {
     const msg = String(e);
+    console.error("ask failed", MODELS[mi], msg.slice(0, 500));
     const limited = /429|RESOURCE_EXHAUSTED|quota/i.test(msg);
     const busy = /503|UNAVAILABLE|overloaded|high demand|504|DEADLINE/i.test(msg);
     return Response.json(
       {
         error: limited ? "The assistant is busy (rate limit). Try again in a minute." : busy ? "Gemini is overloaded right now. Try again in a few seconds." : "The assistant failed to answer. Try again.",
-        detail: limited || busy ? undefined : msg.slice(0, 200),
+        detail: `${MODELS[mi]}: ${msg.slice(0, 220)}`,
       },
       { status: limited ? 429 : busy ? 503 : 500 },
     );

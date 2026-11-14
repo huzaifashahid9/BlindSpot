@@ -23,13 +23,13 @@ export default function ExplainDay({ date, regionId, regionName }: { date: strin
         body: JSON.stringify({ question: q, regionId, history: [{ role: "user", text: q }] }),
       });
       const raw = await r.text();
-      let j: { answer?: string; error?: string; checked?: boolean } = {};
+      let j: { answer?: string; error?: string; detail?: string; checked?: boolean } = {};
       try {
         j = JSON.parse(raw);
       } catch {
         j = { error: `Unexpected response (HTTP ${r.status}).` };
       }
-      setText(j.answer ?? j.error ?? "No answer.");
+      setText(j.answer ?? ([j.error, j.detail].filter(Boolean).join(" ") || "No answer."));
       setChecked(j.checked);
     } catch (e) {
       setText(`Could not reach the assistant (${String(e).slice(0, 80)}).`);
