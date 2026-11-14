@@ -157,8 +157,7 @@ export default function Outlook({ cal, regionName }: { cal: CalendarFile; region
         </span>
       </div>
       <p className="mt-2 text-xs text-slate-500">
-        A climatology outlook, not a weather forecast: it says what this area&apos;s own fire history makes likely for the coming two weeks. It sharpens as
-        the 2000 to 2023 history is added.
+        A climatology outlook, not a weather forecast: it says what this area&apos;s own fire history makes likely for the coming two weeks.
       </p>
     </section>
   );

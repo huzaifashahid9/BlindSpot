@@ -117,13 +117,14 @@ export function unusualFlags(start: string, vals: number[], counts: number[]) {
 }
 
 /** Build a calendar (same shape the pipeline writes) for any area, from the event points. */
-export function buildCalendar(years: PointsYear[], idx: PointsIndex, area: Area, region: Region, days: number): CalendarFile {
+/** fromDay: start the calendar this many days after idx.start (custom areas use only recent years). */
+export function buildCalendar(years: PointsYear[], idx: PointsIndex, area: Area, region: Region, days: number, fromDay = 0): CalendarFile {
   const z = () => new Array(days).fill(0);
   const events = z(), events_h = z(), frp = z(), events_no_snpp = z(), events_h_no_snpp = z(), raw_modis = z(), raw_viirs = z();
   for (const p of years) {
     for (const i of select(p, area, idx.scale)) {
       if (p.pers[i]) continue;
-      const d = p.day[i];
+      const d = p.day[i] - fromDay;
       if (d < 0 || d >= days) continue;
       events[d] += 1;
       events_h[d] += p.w[i] / idx.scale.w;
@@ -136,11 +137,12 @@ export function buildCalendar(years: PointsYear[], idx: PointsIndex, area: Area,
       if (p.sats[i] & VIIRS_BITS) raw_viirs[d] += 1;
     }
   }
-  const u = unusualFlags(idx.start, events_h, events);
-  const u2 = unusualFlags(idx.start, events_h_no_snpp, events_no_snpp);
+  const start = addDays(idx.start, fromDay);
+  const u = unusualFlags(start, events_h, events);
+  const u2 = unusualFlags(start, events_h_no_snpp, events_no_snpp);
   return {
     region,
-    start: idx.start,
+    start,
     days,
     events,
     events_h: events_h.map((v) => Math.round(v * 10) / 10),

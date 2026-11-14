@@ -23,7 +23,7 @@ export const EMPTY = "#111827";
 /** Value -> colour on a square-root scale (fire counts are very skewed). */
 export function heat(v: number, max: number) {
   if (!(v > 0)) return EMPTY;
-  return inferno(0.12 + 0.88 * Math.sqrt(v / Math.max(1e-9, max)));
+  return inferno(0.12 + 0.88 * Math.min(1, Math.sqrt(v / Math.max(1e-9, max))));
 }
 
 /** Text colour that stays readable on a heat cell. */

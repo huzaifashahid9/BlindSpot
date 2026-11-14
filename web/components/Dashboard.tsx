@@ -106,11 +106,16 @@ export default function Dashboard() {
     setAreaBusy(true);
     (async () => {
       const idx = await getIndex();
-      const years = await loadYears(idx.years);
+      // a custom area is computed in the browser from the years since the all-five window began,
+      // not the whole 2000s record (that would be well over 100 MB of downloads)
+      const y0 = Number(le.window.from.slice(0, 4));
+      const years = await loadYears(idx.years.filter((y) => y >= y0));
+      const fromDay = Math.round((Date.parse(`${y0}-01-01`) - Date.parse(idx.start)) / 864e5);
       const area = { kind: "circle" as const, ...custom };
       const reg = { id: "custom", name: "Custom area", level: "district" as const, parent: null };
-      const c = buildCalendar(years, idx, area, reg, cal.days);
-      c.constellation = cal.constellation;
+      const c = buildCalendar(years, idx, area, reg, cal.days - fromDay, fromDay);
+      c.constellation = cal.constellation?.map(([d, k]) => [Math.max(0, d - fromDay), k] as [number, string]);
+      c.baseline_note += ` Custom areas cover ${y0} onward.`;
       const l = lostEyesFor(years, idx, area, le.window.from, le.window.to);
       if (live) {
         setAreaCal(c);
@@ -194,7 +199,7 @@ export default function Dashboard() {
     () => regions?.regions.filter((r) => r.level === "district" && (r.events ?? 0) >= 500).sort((a, b) => (b.only_snpp_share ?? 0) - (a.only_snpp_share ?? 0))[0],
     [regions],
   );
-  const modisEra = harm?.eras.find((e) => e.constellation === "Terra+Aqua" || e.label.toLowerCase().includes("modis"));
+  const modisEra = harm?.eras.find((e) => /^terra\W*aqua$/i.test(e.constellation.replace(/\s/g, "")) || e.label.toLowerCase().includes("modis"));
   const facts = [
     `Suomi NPP stopped on 2 Nov 2026`,
     pak?.only_snpp_share ? `${(pak.only_snpp_share * 100).toFixed(1)}% of Pakistan's fire events were seen by Suomi NPP alone` : null,
@@ -357,7 +362,7 @@ export default function Dashboard() {
 
         {stats ? (
           <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat label={`Harmonized fire events, ${years}`} num={stats.events} format={(v) => fmt(Math.round(v))} sub={R?.name} spark={C ? (C.events_h ?? C.events) : undefined} />
+            <Stat label={`Harmonized fire events, ${custom ? `${le?.window.from.slice(0, 4) ?? ""} to ${regions?.data_to.slice(0, 4) ?? ""}` : years}`} num={stats.events} format={(v) => fmt(Math.round(v))} sub={R?.name} spark={C ? (C.events_h ?? C.events) : undefined} />
             <Stat label="Unusual days" num={stats.unusual} format={(v) => fmt(Math.round(v))} sub={`${fmt(stats.lost)} of ${fmt(stats.win)} since Nov 2023 vanish without Suomi NPP`} />
             <Stat label="Seen only by Suomi NPP" num={stats.only} format={(v) => pct(v)} accent sub="lost from the record since 2 Nov 2026" />
             <Stat

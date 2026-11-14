@@ -32,7 +32,13 @@ export default function Calendar({ cal, selected, onSelect, withoutSnpp }: Props
   const [allYears, setAllYears] = useState(false);
   const values = withoutSnpp ? cal.events_no_snpp : cal.events_h ?? cal.events;
   const flags = withoutSnpp ? cal.unusual_no_snpp : cal.unusual;
-  const max = useMemo(() => Math.max(1, ...(cal.events_h ?? cal.events)), [cal]);
+  // colour scale from the years on show, ignoring the top 0.5% of days so one extreme day does not wash out the rest
+  const max = useMemo(() => {
+    const v = cal.events_h ?? cal.events;
+    const from = allYears ? 0 : Math.max(0, cal.days - 4 * 366);
+    const pos = v.slice(from).filter((x) => x > 0).sort((a, b) => a - b);
+    return Math.max(1, pos.length ? pos[Math.floor((pos.length - 1) * 0.995)] : 1);
+  }, [cal, allYears]);
 
   const years = useMemo(() => {
     const out = new Map<number, { i: number; date: string; week: number; dow: number; month: number }[]>();

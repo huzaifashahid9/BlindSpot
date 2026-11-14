@@ -39,8 +39,13 @@ export default function History({ cal, harm, regionName, outlook = true }: Props
     const ys = [...years].sort((a, b) => a - b);
     const dim = (y: number, m: number) => new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
     const full = (y: number, m: number) => (days.get(`${y}-${m}`) ?? 0) === dim(y, m);
+    // months when Terra was the only satellite: harmonized counts there rest on one sensor and are rough
+    const firstMulti = cal.constellation?.find(([, k]) => k !== "Terra")?.[0];
+    const terraEnd = firstMulti !== undefined && cal.constellation?.[0]?.[1] === "Terra" ? addDays(cal.start, firstMulti) : null;
+    const terraOnly = (y: number, m: number) => terraEnd !== null && `${y}-${String(m + 1).padStart(2, "0")}-${String(dim(y, m)).padStart(2, "0")}` < terraEnd;
     const medByMonth = MONTHS.map((_, m) => median(ys.filter((y) => full(y, m)).map((y) => tot.get(`${y}-${m}`) ?? 0)));
-    const max = Math.max(1, ...[...tot.entries()].filter(([k]) => full(Number(k.split("-")[0]), Number(k.split("-")[1]))).map(([, v]) => v));
+    const solid = (k: string) => full(Number(k.split("-")[0]), Number(k.split("-")[1])) && !terraOnly(Number(k.split("-")[0]), Number(k.split("-")[1]));
+    const max = Math.max(1, ...[...tot.entries()].filter(([k]) => solid(k)).map(([, v]) => v));
     const yearTot = ys.map((y) => MONTHS.reduce((a, _, m) => a + (tot.get(`${y}-${m}`) ?? 0), 0));
 
     // this month so far vs the same days of the same month in earlier years
@@ -65,9 +70,9 @@ export default function History({ cal, harm, regionName, outlook = true }: Props
 
     let best = { k: "", v: -1 };
     tot.forEach((v, k) => {
-      if (v > best.v) best = { k, v };
+      if (v > best.v && solid(k)) best = { k, v };
     });
-    return { tot, cnt, ys, full, medByMonth, max, yearTot, ly, lm, ld, now, past, pastMed, rank, best };
+    return { tot, cnt, ys, full, medByMonth, max, yearTot, ly, lm, ld, now, past, pastMed, rank, best, terraOnly, terraEnd };
   }, [cal, series]);
 
   const eraOfYear = (y: number) => {
@@ -199,7 +204,7 @@ export default function History({ cal, harm, regionName, outlook = true }: Props
                     {MONTHS.map((_, m) => {
                       const k = `${y}-${m}`;
                       const v = data.tot.get(k);
-                      const partial = v !== undefined && !data.full(y, m);
+                      const partial = v !== undefined && (!data.full(y, m) || data.terraOnly(y, m));
                       const isNow = y === data.ly && m === data.lm;
                       return (
                         <td
@@ -245,6 +250,12 @@ export default function History({ cal, harm, regionName, outlook = true }: Props
               }${Number.isFinite(data.medByMonth[hover.m]) && data.medByMonth[hover.m] > 0 ? `, ${(h / data.medByMonth[hover.m]).toFixed(1)}× the ${MONTHS[hover.m]} median` : ""}`
             : "Hover a month. Faded = partial month; white outline = this month; cyan ticks = number of satellites flying that year."}
         </div>
+        {data.terraEnd ? (
+          <p className="mt-2 text-xs text-slate-500">
+            Faded months before {data.terraEnd.slice(0, 7)}: Terra was the only satellite, so the harmonized count rests on one sensor and is rough (see the
+            validation table below). They are left out of the colour scale and the records.
+          </p>
+        ) : null}
         <Legend max={data.max} />
       </section>
 
