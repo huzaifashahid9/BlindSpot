@@ -23,6 +23,7 @@ const Hero = dynamic(() => import("@/components/Hero"), { ssr: false, loading: (
 const Simulator = dynamic(() => import("@/components/Simulator"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
 const SeasonRace = dynamic(() => import("@/components/SeasonRace"), { ssr: false });
 const Tour = dynamic(() => import("@/components/Tour"), { ssr: false });
+const PlaceSearch = dynamic(() => import("@/components/PlaceSearch"), { ssr: false });
 const Live = dynamic(() => import("@/components/Live"), { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-2xl bg-slate-900" /> });
 
 const TABS = [
@@ -48,6 +49,7 @@ export default function Dashboard() {
   const [date, setDate] = useState<string | null>(null);
   const [withoutSnpp, setWithoutSnpp] = useState(false);
   const [custom, setCustom] = useState<Circle | null>(null);
+  const [placeName, setPlaceName] = useState<string | null>(null);
   const [areaCal, setAreaCal] = useState<CalendarFile | null>(null);
   const [areaLe, setAreaLe] = useState<LostEyesFile["regions"][string] | null>(null);
   const [areaBusy, setAreaBusy] = useState(false);
@@ -90,7 +92,7 @@ export default function Dashboard() {
 
   const region = useMemo(() => regions?.regions.find((r) => r.id === regionId) ?? null, [regions, regionId]);
   const customRegion: Region | null = custom
-    ? { id: "custom", name: `Custom area: ${custom.km} km around ${custom.lat}, ${custom.lon}`, level: "district", parent: null, lat: custom.lat, lon: custom.lon }
+    ? { id: "custom", name: placeName ? `${custom.km} km around ${placeName}` : `Custom area: ${custom.km} km around ${custom.lat}, ${custom.lon}`, level: "district", parent: null, lat: custom.lat, lon: custom.lon }
     : null;
 
   // custom area: rebuild the calendar and Lost Eyes in the browser
@@ -257,6 +259,13 @@ export default function Dashboard() {
                 </optgroup>
               ))}
             </select>
+            <PlaceSearch
+              onPick={(h) => {
+                setPlaceName(h.name);
+                setCustom({ lat: Math.round(h.lat * 1e4) / 1e4, lon: Math.round(h.lon * 1e4) / 1e4, km: 15 });
+                if (tab === "area" || tab === "ask") go("calendar");
+              }}
+            />
             <nav className="flex flex-wrap gap-2" aria-label="Sections">
               {TABS.map((t, i) => {
                 const on = tab === t.id;
@@ -458,6 +467,7 @@ export default function Dashboard() {
               cal={custom && areaCal ? areaCal : cal}
               custom={custom}
               onApply={(c) => {
+                setPlaceName(null);
                 setCustom(c);
                 if (c) go("calendar");
               }}
