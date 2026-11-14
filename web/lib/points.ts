@@ -119,7 +119,7 @@ export function unusualFlags(start: string, vals: number[], counts: number[]) {
 /** Build a calendar (same shape the pipeline writes) for any area, from the event points. */
 export function buildCalendar(years: PointsYear[], idx: PointsIndex, area: Area, region: Region, days: number): CalendarFile {
   const z = () => new Array(days).fill(0);
-  const events = z(), events_h = z(), frp = z(), events_no_snpp = z(), raw_modis = z(), raw_viirs = z();
+  const events = z(), events_h = z(), frp = z(), events_no_snpp = z(), events_h_no_snpp = z(), raw_modis = z(), raw_viirs = z();
   for (const p of years) {
     for (const i of select(p, area, idx.scale)) {
       if (p.pers[i]) continue;
@@ -128,13 +128,16 @@ export function buildCalendar(years: PointsYear[], idx: PointsIndex, area: Area,
       events[d] += 1;
       events_h[d] += p.w[i] / idx.scale.w;
       frp[d] += p.frp[i] / idx.scale.frp;
-      if (p.sats[i] !== SNPP_BIT) events_no_snpp[d] += 1;
+      if (p.sats[i] !== SNPP_BIT) {
+        events_no_snpp[d] += 1;
+        events_h_no_snpp[d] += p.w[i] / idx.scale.w;
+      }
       if (p.sats[i] & MODIS_BITS) raw_modis[d] += 1;
       if (p.sats[i] & VIIRS_BITS) raw_viirs[d] += 1;
     }
   }
   const u = unusualFlags(idx.start, events_h, events);
-  const u2 = unusualFlags(idx.start, events_no_snpp, events_no_snpp);
+  const u2 = unusualFlags(idx.start, events_h_no_snpp, events_no_snpp);
   return {
     region,
     start: idx.start,

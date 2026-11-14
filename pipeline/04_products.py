@@ -139,7 +139,9 @@ def build_calendars(ev, det, regions, all_days, const_runs):
         cal["raw_modis"] = dd[dd.sensor == "MODIS"].groupby("local_date").size().reindex(all_days).fillna(0).astype(int)
         cal["raw_viirs"] = dd[dd.sensor == "VIIRS"].groupby("local_date").size().reindex(all_days).fillna(0).astype(int)
         cal["unusual"], cal["pctl"], _ = unusual_flags(cal.events_h, cal.events)
-        u2, _, _ = unusual_flags(cal.events_no_snpp.astype(float), cal.events_no_snpp)
+        # the record without Suomi NPP, on the same harmonized scale, so both flags share one baseline
+        cal["events_h_no_snpp"] = e_ns.groupby("local_date").w.sum().reindex(all_days).fillna(0.0)
+        u2, _, _ = unusual_flags(cal.events_h_no_snpp, cal.events_no_snpp)
         cal["unusual_no_snpp"] = u2
         crit = critical_weeks(cal.events_h)
         cal["critical"] = cal.index.isocalendar().week.isin(crit).to_numpy()
@@ -181,7 +183,9 @@ def build_calendars(ev, det, regions, all_days, const_runs):
         baselines[reg["id"]] = {"median": med, "p90": p90}
         out_index[reg["id"]] = {"events": int(cal.events.sum()), "events_h": r(cal.events_h.sum(), 0), "frp": r(cal.frp.sum(), 0),
                                 "unusual_days": int(cal.unusual.sum()),
-                                "unusual_days_lost": int((cal.unusual & ~cal.unusual_no_snpp).sum())}
+                                # counted inside the all-five window: what the record loses from now on
+                                "unusual_days_lost": int((cal.unusual & ~cal.unusual_no_snpp)[(cal.index >= ALL_FIVE_START) & (cal.index <= ALL_FIVE_END)].sum()),
+                                "unusual_days_window": int(cal.unusual[(cal.index >= ALL_FIVE_START) & (cal.index <= ALL_FIVE_END)].sum())}
     years = sorted(set(all_days.year))
     write_json("baseline.json", {"note": "Per region and day of year (1-366): median and 90th percentile of daily harmonized fire events over +-7 days in all years on record.",
                                  "years": [int(years[0]), int(years[-1])], "regions": baselines})
@@ -418,7 +422,7 @@ def main():
         "frp_calibration": cal_meta["frp_validation"], "frp_ratio_by_scan_bin": cal_meta["frp_ratio_by_scan_bin"],
         "confidence": cal_meta["confidence"], "params": cal_meta["params"],
         "lost_eyes_national": {k: nat[k] for k in ["events", "only_share", "snpp_saw_share", "frp_only_snpp_share"]},
-        "unusual_days_national": cal_index["PAK"]["unusual_days"],
+        "unusual_days_national": cal_index["PAK"]["unusual_days_window"],
         "unusual_days_lost_without_snpp_national": cal_index["PAK"]["unusual_days_lost"],
         "pass_drift": {s: pinfo[s]["day_pass_by_year"] for s in ["Terra", "Aqua"]},
         "harmonization": {k: harm[k] for k in ["reference", "note", "eras", "present"]},

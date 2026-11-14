@@ -147,14 +147,24 @@ export default function Dashboard() {
       return {
         events: (areaCal.events_h ?? areaCal.events).reduce((a, b) => a + b, 0),
         unusual: areaCal.unusual.reduce((a, b) => a + b, 0),
-        lost: areaCal.unusual.reduce((a, b, i) => a + (b && !areaCal.unusual_no_snpp[i] ? 1 : 0), 0),
+        ...(() => {
+          // the loss counts inside the all-five window only
+          const w0 = le ? Math.round((Date.parse(le.window.from) - Date.parse(areaCal.start)) / 864e5) : 0;
+          const w1 = le ? Math.round((Date.parse(le.window.to) - Date.parse(areaCal.start)) / 864e5) : areaCal.days - 1;
+          let lost = 0, win = 0;
+          for (let i = Math.max(0, w0); i <= Math.min(areaCal.days - 1, w1); i++) {
+            if (areaCal.unusual[i]) win++;
+            if (areaCal.unusual[i] && !areaCal.unusual_no_snpp[i]) lost++;
+          }
+          return { lost, win };
+        })(),
         only: areaLe.only_share.SNPP,
         trust: undefined as number | undefined,
       };
     }
     if (!region) return null;
-    return { events: region.events_h ?? region.events ?? 0, unusual: region.unusual_days ?? 0, lost: region.unusual_days_lost ?? 0, only: region.only_snpp_share ?? 0, trust: region.trust_now };
-  }, [custom, areaCal, areaLe, region]);
+    return { events: region.events_h ?? region.events ?? 0, unusual: region.unusual_days ?? 0, lost: region.unusual_days_lost ?? 0, win: region.unusual_days_window ?? region.unusual_days ?? 0, only: region.only_snpp_share ?? 0, trust: region.trust_now };
+  }, [custom, areaCal, areaLe, region, le]);
 
   useEffect(() => {
     const q = new URLSearchParams();
@@ -188,7 +198,7 @@ export default function Dashboard() {
   const facts = [
     `Suomi NPP stopped on 2 Nov 2026`,
     pak?.only_snpp_share ? `${(pak.only_snpp_share * 100).toFixed(1)}% of Pakistan's fire events were seen by Suomi NPP alone` : null,
-    pak?.unusual_days ? `${pak.unusual_days} unusual burning days since Nov 2023, ${pak.unusual_days_lost} of them vanish without Suomi NPP` : null,
+    pak?.unusual_days ? `${pak.unusual_days_lost} of ${pak.unusual_days_window ?? pak.unusual_days} unusual burning days since Nov 2023 vanish without Suomi NPP` : null,
     topDistrict ? `${topDistrict.name} loses the most: ${((topDistrict.only_snpp_share ?? 0) * 100).toFixed(0)}% of its fires were Suomi NPP only` : null,
     modisEra?.monthly_error_raw && modisEra.monthly_error_harmonized
       ? `Harmonization cuts monthly count error in MODIS-only years from ${Math.round(modisEra.monthly_error_raw * 100)}% to ${Math.round(modisEra.monthly_error_harmonized * 100)}%`
@@ -348,7 +358,7 @@ export default function Dashboard() {
         {stats ? (
           <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat label={`Harmonized fire events, ${years}`} num={stats.events} format={(v) => fmt(Math.round(v))} sub={R?.name} spark={C ? (C.events_h ?? C.events) : undefined} />
-            <Stat label="Unusual days" num={stats.unusual} format={(v) => fmt(Math.round(v))} sub={`${fmt(stats.lost)} vanish without Suomi NPP`} />
+            <Stat label="Unusual days" num={stats.unusual} format={(v) => fmt(Math.round(v))} sub={`${fmt(stats.lost)} of ${fmt(stats.win)} since Nov 2023 vanish without Suomi NPP`} />
             <Stat label="Seen only by Suomi NPP" num={stats.only} format={(v) => pct(v)} accent sub="lost from the record since 2 Nov 2026" />
             <Stat
               label="Trust Score (0 to 100)"
