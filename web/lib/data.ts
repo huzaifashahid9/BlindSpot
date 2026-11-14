@@ -6,6 +6,7 @@ export type Region = {
   level: "country" | "province" | "district";
   parent: string | null;
   events?: number;
+  events_h?: number;
   frp?: number;
   unusual_days?: number;
   unusual_days_lost?: number;
@@ -33,6 +34,7 @@ export type CalendarFile = {
   start: string;
   days: number;
   events: number[];
+  events_h?: number[];
   frp: number[];
   events_no_snpp: number[];
   raw_modis: number[];
@@ -43,6 +45,27 @@ export type CalendarFile = {
   critical_weeks: number[];
   seasons: Season[];
   baseline_note: string;
+  constellation?: [number, string][];
+};
+
+export type HarmEra = {
+  constellation: string;
+  label: string;
+  era: string;
+  share_seen: number;
+  k_national: number;
+  monthly_error_raw: number | null;
+  monthly_error_harmonized: number | null;
+  annual_total_ratio: number;
+  n_unit_months: number;
+};
+
+export type HarmonizationFile = {
+  reference: string;
+  note: string;
+  eras: HarmEra[];
+  present: { constellation: string; label: string; days: number }[];
+  runs: [number, string][];
 };
 
 export type DayEvents = { date: string; fields: string[]; rows: (string | number | null)[][] };

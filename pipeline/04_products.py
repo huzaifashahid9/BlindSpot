@@ -20,6 +20,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
+from harmonize_counts import harmonize
 from common import ALL_FIVE_END, ALL_FIVE_START, BOUNDS, PKT_OFFSET, PROC, WEB_DATA, r, write_json
 
 SATS = ["Terra", "Aqua", "SNPP", "NOAA20", "NOAA21"]
@@ -69,28 +70,31 @@ def region_masks(ev: pd.DataFrame, regions):
 
 # ---------------------------------------------------------------- calendar
 def unusual_flags(series: pd.Series, events: pd.Series):
-    """series indexed by date. A day is unusual when its harmonized FRP is above the 90th
-    percentile of the same +-7 days of the year in all OTHER years, and it has 3+ events."""
-    df = pd.DataFrame({"v": series, "n": events})
-    df["doy"] = df.index.dayofyear
-    df["yr"] = df.index.year
-    flags = np.zeros(len(df), dtype=bool)
-    pct = np.full(len(df), np.nan)
-    base_n = np.zeros(len(df), dtype=int)
-    vals, doys, yrs = df.v.to_numpy(), df.doy.to_numpy(), df.yr.to_numpy()
-    # ignore the quiet season: a day must also be above the region's typical burning day
+    """series indexed by date. A day is unusual when its value is above the 90th percentile of the
+    same +-7 days of the year in all OTHER years, above the region's median active day, and it has 3+ events."""
+    vals = series.to_numpy(dtype=float)
+    nev = events.to_numpy()
+    doys = series.index.dayofyear.to_numpy()
+    yrs = series.index.year.to_numpy()
+    n = len(vals)
+    flags = np.zeros(n, dtype=bool)
+    pct = np.full(n, np.nan)
+    base_n = np.zeros(n, dtype=int)
     floor = np.median(vals[vals > 0]) if (vals > 0).any() else 0.0
-    for k in range(len(df)):
-        dd = np.abs(doys - doys[k])
-        dd = np.minimum(dd, 366 - dd)
-        m = (dd <= DOY_WINDOW) & (yrs != yrs[k])
-        base = vals[m]
-        base_n[k] = m.sum()
+    by_doy = {d: np.flatnonzero(doys == d) for d in np.unique(doys)}
+    pools = {}
+    for d in by_doy:
+        ids = [by_doy[x] for x in by_doy if min(abs(x - d), 366 - abs(x - d)) <= DOY_WINDOW]
+        pools[d] = np.concatenate(ids)
+    for k in range(n):
+        idx = pools[doys[k]]
+        base = vals[idx[yrs[idx] != yrs[k]]]
+        base_n[k] = len(base)
         if base_n[k] < 10:
             continue
         thr = np.percentile(base, UNUSUAL_PCTL)
         pct[k] = (base < vals[k]).mean() * 100
-        flags[k] = vals[k] > thr and vals[k] >= floor and df.n.iloc[k] >= UNUSUAL_MIN_EVENTS
+        flags[k] = vals[k] > thr and vals[k] >= floor and nev[k] >= UNUSUAL_MIN_EVENTS
     return flags, pct, base_n
 
 
@@ -108,7 +112,7 @@ def critical_weeks(series: pd.Series):
     return sorted(int(k) for k, v in share.items() if v >= 0.5 and nyears >= 2)
 
 
-def build_calendars(ev, det, regions, all_days):
+def build_calendars(ev, det, regions, all_days, const_runs):
     out_index = {}
     ev_ok = ev[~ev.persistent]
     det_ok = det[~det.dup]
@@ -127,15 +131,16 @@ def build_calendars(ev, det, regions, all_days):
         cal = pd.DataFrame(index=all_days)
         cal["events"] = g.size().reindex(all_days).fillna(0).astype(int)
         cal["frp"] = g.frp_h.sum().reindex(all_days).fillna(0.0)
+        cal["events_h"] = g.w.sum().reindex(all_days).fillna(0.0)
         e_ns = e[e.sats != "SNPP"]
         cal["events_no_snpp"] = e_ns.groupby("local_date").size().reindex(all_days).fillna(0).astype(int)
         cal["frp_no_snpp"] = e_ns.groupby("local_date").frp_h.sum().reindex(all_days).fillna(0.0)
         cal["raw_modis"] = dd[dd.sensor == "MODIS"].groupby("local_date").size().reindex(all_days).fillna(0).astype(int)
         cal["raw_viirs"] = dd[dd.sensor == "VIIRS"].groupby("local_date").size().reindex(all_days).fillna(0).astype(int)
-        cal["unusual"], cal["pctl"], _ = unusual_flags(cal.frp, cal.events)
-        u2, _, _ = unusual_flags(cal.frp_no_snpp, cal.events_no_snpp)
+        cal["unusual"], cal["pctl"], _ = unusual_flags(cal.events_h, cal.events)
+        u2, _, _ = unusual_flags(cal.events_no_snpp.astype(float), cal.events_no_snpp)
         cal["unusual_no_snpp"] = u2
-        crit = critical_weeks(cal.frp)
+        crit = critical_weeks(cal.events_h)
         cal["critical"] = cal.index.isocalendar().week.isin(crit).to_numpy()
 
         # season metrics per crop season: rabi (Mar-Jun) and kharif (Sep-Dec)
@@ -153,16 +158,17 @@ def build_calendars(ev, det, regions, all_days):
                                 "total_frp_mw": r(s.sum(), 0), "events": int(cal.events[s.index].sum())})
         obj = {
             "region": reg, "start": all_days[0].strftime("%Y-%m-%d"), "days": len(all_days),
-            "events": cal.events.tolist(), "frp": [r(v, 1) for v in cal.frp],
+            "events": cal.events.tolist(), "events_h": [r(v, 1) for v in cal.events_h], "frp": [r(v, 1) for v in cal.frp],
             "events_no_snpp": cal.events_no_snpp.tolist(),
             "raw_modis": cal.raw_modis.tolist(), "raw_viirs": cal.raw_viirs.tolist(),
             "unusual": [int(x) for x in cal.unusual], "unusual_no_snpp": [int(x) for x in cal.unusual_no_snpp],
             "pctl": [None if np.isnan(x) else int(x) for x in cal.pctl],
             "critical_weeks": crit, "seasons": seasons,
-            "baseline_note": "Unusual = above the 90th percentile of the same +-7 days in the other years on record, and above the region's median burning day (3+ events).",
+            "constellation": const_runs,
+            "baseline_note": "Unusual = harmonized fire events above the 90th percentile of the same +-7 days in the other years on record, and above the region's median burning day (3+ events).",
         }
         write_json(f"calendar/{reg['id']}.json", obj)
-        out_index[reg["id"]] = {"events": int(cal.events.sum()), "frp": r(cal.frp.sum(), 0),
+        out_index[reg["id"]] = {"events": int(cal.events.sum()), "events_h": r(cal.events_h.sum(), 0), "frp": r(cal.frp.sum(), 0),
                                 "unusual_days": int(cal.unusual.sum()),
                                 "unusual_days_lost": int((cal.unusual & ~cal.unusual_no_snpp).sum())}
     return out_index
@@ -314,6 +320,36 @@ def day_files(ev):
                    "persistent", "raw_modis_frp", "raw_viirs_frp", "n_det", "first_pkt", "last_pkt", "seen_by"], "rows": rows})
 
 
+def points_files(ev, regions, all_days):
+    """Compact per-year event files (columnar) for custom areas and CSV download in the browser."""
+    ids = [x["id"] for x in regions if x["level"] == "district"]
+    dix = {d: i for i, d in enumerate(ids)}
+    start = all_days[0]
+    sat_bit = {s: 1 << i for i, s in enumerate(SATS)}
+    e = ev.copy()
+    e["day"] = (e.local_date - start).dt.days
+    e["mask"] = sum(((e[f"n_{s}"] > 0).astype(int) * b) for s, b in sat_bit.items())
+    years = []
+    for yr, g in e.groupby(e.local_date.dt.year):
+        years.append(int(yr))
+        write_json(f"points/{yr}.json", {
+            "year": int(yr), "n": len(g),
+            "day": g.day.astype(int).tolist(),
+            "lat": (g.lat * 1e4).round().astype(int).tolist(),
+            "lon": (g.lon * 1e4).round().astype(int).tolist(),
+            "frp": (g.frp_h * 10).round().astype(int).tolist(),
+            "conf": (g.conf_h * 100).round().astype(int).tolist(),
+            "sats": g["mask"].astype(int).tolist(),
+            "ndet": g.n_det.astype(int).tolist(),
+            "t": (g.first_pkt.dt.hour * 60 + g.first_pkt.dt.minute).astype(int).tolist(),
+            "dist": [dix.get(x, -1) for x in g.district_id],
+            "pers": g.persistent.astype(int).tolist(),
+            "w": (g.w * 100).round().astype(int).tolist(),
+        })
+    write_json("points/index.json", {"start": start.strftime("%Y-%m-%d"), "years": years, "districts": ids,
+                                     "sat_bits": sat_bit, "scale": {"lat": 1e4, "lon": 1e4, "frp": 10, "conf": 100, "w": 100}})
+
+
 def main():
     ev = pd.read_parquet(PROC / "events.parquet")
     det = pd.read_parquet(PROC / "detections_h.parquet")
@@ -322,9 +358,19 @@ def main():
     ev["local_date"] = pd.to_datetime(ev.local_date)
     all_days = pd.date_range(ev.local_date.min(), ev.local_date.max(), freq="D")
 
+    w, const, harm = harmonize(ev, all_days)
+    ev["w"] = w
+    const_runs = []
+    for i, k in enumerate(const.to_numpy()):
+        if not const_runs or const_runs[-1][1] != k:
+            const_runs.append([i, k])
+    harm["runs"] = const_runs
+    write_json("harmonization.json", harm)
+    print("harmonization", [(e["label"], e["monthly_error_raw"], e["monthly_error_harmonized"]) for e in harm["eras"]])
+
     regions, centroids = build_regions(ev)
     print("regions", len(regions))
-    cal_index = build_calendars(ev, det, regions, all_days)
+    cal_index = build_calendars(ev, det, regions, all_days, const_runs)
     print("calendars", len(cal_index))
     le = lost_eyes(ev, regions)
     write_json("lost_eyes.json", le)
@@ -334,6 +380,7 @@ def main():
     tr = trust(ev, pairs, det, regions, centroids, pinfo)
     write_json("trust.json", tr)
     day_files(ev)
+    points_files(ev, regions, all_days)
 
     for reg in regions:
         rid = reg["id"]
@@ -360,6 +407,7 @@ def main():
         "unusual_days_national": cal_index["PAK"]["unusual_days"],
         "unusual_days_lost_without_snpp_national": cal_index["PAK"]["unusual_days_lost"],
         "pass_drift": {s: pinfo[s]["day_pass_by_year"] for s in ["Terra", "Aqua"]},
+        "harmonization": {k: harm[k] for k in ["reference", "note", "eras", "present"]},
     }
     sens = PROC / "sensitivity.json"
     if sens.exists():

@@ -4,26 +4,9 @@ import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MLMap, MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
+import { basemap, WORKER_URL } from "@/lib/basemap";
 import { DayEvents, FireEvent, getJSON, SAT_COLOR, SAT_LABEL, toEvents } from "@/lib/data";
 
-// Inline style: if basemap tiles fail to load, districts and fires still draw on a dark background.
-const BASEMAP: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    // Keyless basemap (CARTO now asks for an API key outside localhost).
-    base: {
-      type: "raster",
-      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
-      tileSize: 256,
-      maxzoom: 16,
-      attribution: "Basemap © Esri",
-    },
-  },
-  layers: [
-    { id: "bg", type: "background", paint: { "background-color": "#0b1220" } },
-    { id: "base", type: "raster", source: "base" },
-  ],
-};
 const GIBS = (layer: string, date: string, level = 9, ext = "jpg") =>
   `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${date}/GoogleMapsCompatible_Level${level}/{z}/{y}/{x}.${ext}`;
 const IMAGERY = [
@@ -68,8 +51,8 @@ export default function DayMap({ date, withoutSnpp, focus }: Props) {
   useEffect(() => {
     if (!box.current || map.current) return;
     // The bundler cannot locate MapLibre's module worker on its own; it is copied to /public on install.
-    maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
-    const m = new maplibregl.Map({ container: box.current, style: BASEMAP, center: [70.5, 30.2], zoom: 4.6, attributionControl: { compact: true } });
+    maplibregl.setWorkerUrl(WORKER_URL);
+    const m = new maplibregl.Map({ container: box.current, style: basemap("dark"), center: [70.5, 30.2], zoom: 4.6, attributionControl: { compact: true } });
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     m.on("load", () => {
       m.addSource("districts", { type: "geojson", data: "/data/districts.geojson" });

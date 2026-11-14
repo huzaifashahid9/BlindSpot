@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { addDays, CalendarFile, fmt } from "@/lib/data";
+import { heat } from "@/lib/ramp";
 
 type Props = {
   cal: CalendarFile;
@@ -15,21 +16,7 @@ const GAP = 2;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function colour(v: number, max: number) {
-  if (v <= 0) return "#1e293b";
-  const t = Math.min(1, Math.sqrt(v / max));
-  // dark amber -> orange -> near white
-  const stops = [
-    [69, 26, 3],
-    [194, 65, 12],
-    [249, 115, 22],
-    [253, 186, 116],
-    [255, 247, 237],
-  ];
-  const x = t * (stops.length - 1);
-  const i = Math.min(stops.length - 2, Math.floor(x));
-  const f = x - i;
-  const c = stops[i].map((a, k) => Math.round(a + (stops[i + 1][k] - a) * f));
-  return `rgb(${c[0]},${c[1]},${c[2]})`;
+  return v > 0 ? heat(v, max) : "#141a26";
 }
 
 function isoWeek(d: Date) {
@@ -42,9 +29,10 @@ function isoWeek(d: Date) {
 
 export default function Calendar({ cal, selected, onSelect, withoutSnpp }: Props) {
   const [hover, setHover] = useState<number | null>(null);
-  const values = withoutSnpp ? cal.events_no_snpp : cal.events;
+  const [allYears, setAllYears] = useState(false);
+  const values = withoutSnpp ? cal.events_no_snpp : cal.events_h ?? cal.events;
   const flags = withoutSnpp ? cal.unusual_no_snpp : cal.unusual;
-  const max = useMemo(() => Math.max(1, ...cal.events), [cal]);
+  const max = useMemo(() => Math.max(1, ...(cal.events_h ?? cal.events)), [cal]);
 
   const years = useMemo(() => {
     const out = new Map<number, { i: number; date: string; week: number; dow: number; month: number }[]>();
@@ -58,8 +46,9 @@ export default function Calendar({ cal, selected, onSelect, withoutSnpp }: Props
       if (!out.has(y)) out.set(y, []);
       out.get(y)!.push({ i, date, week, dow, month: d.getUTCMonth() });
     }
-    return [...out.entries()];
+    return [...out.entries()].reverse();
   }, [cal]);
+  const shownYears = allYears ? years : years.slice(0, 4);
 
   const h = hover !== null ? hover : null;
   const W = 54 * (CELL + GAP) + 40;
@@ -69,7 +58,7 @@ export default function Calendar({ cal, selected, onSelect, withoutSnpp }: Props
       <div className="mb-2 h-10 text-sm text-slate-300">
         {h !== null ? (
           <span>
-            <b className="text-white">{addDays(cal.start, h)}</b> · {fmt(values[h])} fire events · {fmt(cal.frp[h])} MW total
+            <b className="text-white">{addDays(cal.start, h)}</b> · {fmt(Math.round(values[h]))} {withoutSnpp ? "" : "harmonized "}fire events · {fmt(cal.frp[h])} MW total
             fire power · raw: {fmt(cal.raw_modis[h])} MODIS / {fmt(cal.raw_viirs[h])} VIIRS detections
             {flags[h] ? <span className="ml-2 rounded bg-cyan-500/20 px-1.5 text-cyan-300">unusual day</span> : null}
           </span>
@@ -78,7 +67,7 @@ export default function Calendar({ cal, selected, onSelect, withoutSnpp }: Props
         )}
       </div>
       <div className="overflow-x-auto">
-        {years.map(([y, cells]) => (
+        {shownYears.map(([y, cells]) => (
           <div key={y} className="mb-3">
             <svg width={W} height={7 * (CELL + GAP) + 26} className="block">
               <text x={0} y={10 + 3.5 * (CELL + GAP)} fill="#94a3b8" fontSize={12} fontWeight={600}>
@@ -111,13 +100,18 @@ export default function Calendar({ cal, selected, onSelect, withoutSnpp }: Props
           </div>
         ))}
       </div>
+      {years.length > 4 ? (
+        <button onClick={() => setAllYears(!allYears)} className="btn-ghost mb-2 py-1.5 text-xs">
+          {allYears ? "Show the latest 4 years" : `Show all ${years.length} years (${years[years.length - 1][0]} to ${years[0][0]})`}
+        </button>
+      ) : null}
       <div className="mt-1 flex flex-wrap items-center gap-4 text-xs text-slate-400">
         <span className="flex items-center gap-1">
           less
-          {[0, 3, 30, 300, max].map((v) => (
+          {[0, max * 0.01, max * 0.05, max * 0.2, max * 0.5, max].map((v) => (
             <span key={v} className="inline-block h-3 w-3 rounded-sm" style={{ background: colour(v, max) }} />
           ))}
-          more fire events
+          more fire events (colour-blind safe)
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded-sm border-2 border-cyan-400" /> unusual day

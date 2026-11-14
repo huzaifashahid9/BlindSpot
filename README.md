@@ -14,6 +14,8 @@ On 2 November 2026 NASA stopped Suomi NPP fire data. BlindSpot fuses MODIS (Terr
 | Lost Eyes | Share of events seen only by each satellite, month by month, by fire size, and the districts that lose the most. |
 | Blind Clock | When each satellite passes over a region (Pakistan time), the longest unwatched stretch, and how Terra and Aqua are drifting. |
 | Ask BlindSpot | Gemini answers questions from the site's own data via function calling, in English or Urdu. Every number in an answer is checked against the tool results on the server. |
+| Fire history | Month × year heatmap (harmonized or raw), this month vs the historical median, and the harmonization check per satellite era. |
+| Area & export | Click the map or type lat/lon + radius to recompute everything for your own area; download fire events, the daily calendar or a monthly summary as CSV for any date range. |
 | Method | Every step, the calibration test, the limits, and data credits. |
 
 ## Repository layout
@@ -70,6 +72,7 @@ The Gemini key stays on the server (`app/api/ask/route.ts`); it is never sent to
 4. **Common confidence**: how often each sensor/class is confirmed by another satellite within 1 km and 90 min when one was overhead.
 5. **Fuse** all detections within 0.75 km on the same Pakistan day into one event; event FRP is the strongest single pass.
 6. **Persistent heat** (kilns, industry, flares): cells active on 30+ days are kept out of the calendar.
+7. **Harmonize counts across eras**: the number of fires recorded depends on which satellites were flying. Inside the 2023–2026 window we learn, per province and month, how many events the full five-satellite constellation records for every event a smaller set (MODIS only, MODIS + Suomi NPP, …) sees. Leave-one-year-out test: MODIS-only monthly error falls from 91% to 26%, MODIS + Suomi NPP from 55% to 8%, today's four satellites from 21% to 3%.
 
 Full detail and limits are on the site's Method page.
 
