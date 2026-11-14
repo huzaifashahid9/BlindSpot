@@ -3,7 +3,12 @@
 import { GoogleGenAI, type Content, type FunctionDeclaration } from "@google/genai";
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+// Used if the main model is not available on the key (404 / not found).
+const FALLBACK_MODEL = "gemini-2.5-flash";
 const MAX_ROUNDS = 5;
+
+// Gemini plus tool calls can take a while; the platform default may be shorter.
+export const maxDuration = 60;
 
 type Json = Record<string, unknown>;
 
@@ -142,6 +147,11 @@ function numbersOk(answer: string, toolText: string) {
   return bad;
 }
 
+// Health check: open /api/ask in a browser to see whether the key is set and which model is used.
+export async function GET() {
+  return Response.json({ configured: Boolean(process.env.GEMINI_API_KEY), model: MODEL });
+}
+
 export async function POST(req: Request) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return Response.json({ error: "The assistant is not configured yet (GEMINI_API_KEY missing on the server)." }, { status: 503 });
@@ -154,17 +164,26 @@ export async function POST(req: Request) {
   const question = String(body.question ?? "").slice(0, 600);
   if (!question.trim()) return Response.json({ error: "Empty question" }, { status: 400 });
   const origin = new URL(req.url).origin;
-  const ai = new GoogleGenAI({ apiKey: key });
+  const ai = new GoogleGenAI({ apiKey: key, httpOptions: { timeout: 25000 } });
 
   const contents: Content[] = (body.history ?? []).slice(0, -1).map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.text }] }));
   contents.push({ role: "user", parts: [{ text: `${question}\n\n(The user is currently looking at region id: ${body.regionId ?? "PAK"})` }] });
 
   const used: string[] = [];
   let toolText = "";
+  let model = MODEL;
   try {
     for (let attempt = 0; attempt < 2; attempt++) {
       for (let round = 0; round < MAX_ROUNDS; round++) {
-        const res = await ai.models.generateContent({ model: MODEL, contents, config: { systemInstruction: SYSTEM, tools: [{ functionDeclarations: tools }], temperature: 0.2 } });
+        const config = { systemInstruction: SYSTEM, tools: [{ functionDeclarations: tools }], temperature: 0.2 };
+        let res;
+        try {
+          res = await ai.models.generateContent({ model, contents, config });
+        } catch (e) {
+          if (model === FALLBACK_MODEL || !/404|NOT_FOUND|not found|not supported/i.test(String(e))) throw e;
+          model = FALLBACK_MODEL;
+          res = await ai.models.generateContent({ model, contents, config });
+        }
         const calls = res.functionCalls ?? [];
         if (calls.length === 0) {
           const answer = (res.text ?? "").trim();

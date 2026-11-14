@@ -75,7 +75,7 @@ Full detail and limits are on the site's Method page.
 
 ## Data and credits
 
-We acknowledge the use of data and imagery from NASA's Fire Information for Resource Management System (FIRMS), part of NASA's Earth Science Data and Information System (ESDIS), and imagery from NASA GIBS. MODIS Collection 6.1 Active Fire (MCD14ML/MCD14DL); VIIRS 375 m Active Fire from Suomi NPP, NOAA-20 and NOAA-21. District boundaries from geoBoundaries (CC BY 4.0). Basemap © CARTO, © OpenStreetMap contributors.
+We acknowledge the use of data and imagery from NASA's Fire Information for Resource Management System (FIRMS), part of NASA's Earth Science Data and Information System (ESDIS), and imagery from NASA GIBS. MODIS Collection 6.1 Active Fire (MCD14ML/MCD14DL); VIIRS 375 m Active Fire from Suomi NPP, NOAA-20 and NOAA-21. District boundaries from geoBoundaries (CC BY 4.0). Basemap © Esri; NASA GIBS imagery.
 
 ## Use of AI
 

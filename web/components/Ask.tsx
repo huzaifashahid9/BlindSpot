@@ -28,10 +28,17 @@ export default function Ask({ regionId }: { regionId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: text, regionId, history: next.slice(-6).map((m) => ({ role: m.role, text: m.text })) }),
       });
-      const data = await res.json();
-      setMsgs([...next, { role: "assistant", text: data.answer ?? data.error ?? "No answer.", checked: data.checked, tools: data.tools }]);
-    } catch {
-      setMsgs([...next, { role: "assistant", text: "Could not reach the assistant. Try again in a moment." }]);
+      const raw = await res.text();
+      let data: { answer?: string; error?: string; detail?: string; checked?: boolean; tools?: string[] } = {};
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        data = { error: `The assistant returned an unexpected response (HTTP ${res.status}).`, detail: raw.slice(0, 160) };
+      }
+      const reply = data.answer ?? [data.error, data.detail].filter(Boolean).join("\n") ?? "No answer.";
+      setMsgs([...next, { role: "assistant", text: reply || "No answer.", checked: data.checked, tools: data.tools }]);
+    } catch (e) {
+      setMsgs([...next, { role: "assistant", text: `Could not reach the assistant (${String(e).slice(0, 120)}). Try again in a moment.` }]);
     } finally {
       setBusy(false);
     }

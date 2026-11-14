@@ -10,24 +10,28 @@ import { DayEvents, FireEvent, getJSON, SAT_COLOR, SAT_LABEL, toEvents } from "@
 const BASEMAP: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
-    carto: {
+    // Keyless basemap (CARTO now asks for an API key outside localhost).
+    base: {
       type: "raster",
-      tiles: ["a", "b", "c"].map((k) => `https://${k}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png`),
+      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
       tileSize: 256,
-      attribution: "© OpenStreetMap contributors © CARTO",
+      maxzoom: 16,
+      attribution: "Basemap © Esri",
     },
   },
   layers: [
     { id: "bg", type: "background", paint: { "background-color": "#0b1220" } },
-    { id: "carto", type: "raster", source: "carto" },
+    { id: "base", type: "raster", source: "base" },
   ],
 };
-const GIBS = (layer: string, date: string) =>
-  `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`;
+const GIBS = (layer: string, date: string, level = 9, ext = "jpg") =>
+  `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${date}/GoogleMapsCompatible_Level${level}/{z}/{y}/{x}.${ext}`;
 const IMAGERY = [
-  { id: "VIIRS_NOAA20_CorrectedReflectance_TrueColor", label: "NOAA-20 VIIRS true colour" },
-  { id: "MODIS_Aqua_CorrectedReflectance_TrueColor", label: "Aqua MODIS true colour" },
-  { id: "MODIS_Terra_CorrectedReflectance_TrueColor", label: "Terra MODIS true colour" },
+  { id: "VIIRS_Black_Marble", label: "Black Marble night lights", fixedDate: "2016-01-01", level: 8, ext: "png" },
+  { id: "BlueMarble_ShadedRelief_Bathymetry", label: "Blue Marble relief", fixedDate: "2004-08-01", level: 8, ext: "jpeg" },
+  { id: "VIIRS_NOAA20_CorrectedReflectance_TrueColor", label: "NOAA-20 VIIRS true colour, that day" },
+  { id: "MODIS_Aqua_CorrectedReflectance_TrueColor", label: "Aqua MODIS true colour, that day" },
+  { id: "MODIS_Terra_CorrectedReflectance_TrueColor", label: "Terra MODIS true colour, that day" },
 ];
 
 type Props = { date: string; withoutSnpp: boolean; focus?: { lon: number; lat: number } | null };
@@ -122,7 +126,8 @@ export default function DayMap({ date, withoutSnpp, focus }: Props) {
     if (m.getLayer("gibs")) m.removeLayer("gibs");
     if (m.getSource("gibs")) m.removeSource("gibs");
     if (imagery) {
-      m.addSource("gibs", { type: "raster", tiles: [GIBS(imagery, date)], tileSize: 256, maxzoom: 9, attribution: "Imagery: NASA GIBS" });
+      const l = IMAGERY.find((x) => x.id === imagery) as { fixedDate?: string; level?: number; ext?: string } | undefined;
+      m.addSource("gibs", { type: "raster", tiles: [GIBS(imagery, l?.fixedDate ?? date, l?.level ?? 9, l?.ext ?? "jpg")], tileSize: 256, maxzoom: l?.level ?? 9, attribution: "Imagery: NASA GIBS" });
       m.addLayer({ id: "gibs", type: "raster", source: "gibs", paint: { "raster-opacity": 0.85 } }, "districts-line");
     }
   }, [imagery, date, ready]);

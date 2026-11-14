@@ -199,7 +199,7 @@ export default function Method() {
         </li>
         <li>Giglio, Schroeder and Justice (2016), Remote Sensing of Environment 178, 31–41, doi:10.1016/j.rse.2016.02.054.</li>
         <li>Schroeder et al. (2014), Remote Sensing of Environment 143, 85–96, doi:10.1016/j.rse.2013.12.008.</li>
-        <li>District boundaries: geoBoundaries (Runfola et al. 2020), CC BY 4.0. Basemap © CARTO, © OpenStreetMap contributors.</li>
+        <li>District boundaries: geoBoundaries (Runfola et al. 2020), CC BY 4.0. Basemap © Esri; night lights and relief imagery from NASA GIBS.</li>
       </ul>
       <h2>9. Use of AI</h2>
       <p className="text-sm">
