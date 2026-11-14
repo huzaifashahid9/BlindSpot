@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { fmt, getJSON, minToHHMM, pct } from "@/lib/data";
 import Icon from "@/components/Icon";
 import { LogoMark } from "@/components/Logo";
+import TwoEyes from "@/components/TwoEyes";
 
 type Validation = {
   detections: number;
@@ -130,6 +131,8 @@ export default function Method() {
           ))}
         </tbody>
       </table>
+
+      <TwoEyes bins={v.frp_ratio_by_scan_bin} medianRatio={Number(c.median_ratio_modis_over_viirs)} />
 
       <h2>3. Confidence on one scale</h2>
       <table className="text-sm">

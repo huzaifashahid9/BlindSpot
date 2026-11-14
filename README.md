@@ -16,10 +16,13 @@ On 2 November 2026 NASA stopped Suomi NPP fire data. BlindSpot fuses MODIS (Terr
 | Season race | Each burning season's running total of fire events raced day by day against earlier seasons, with this season's pace against last year. |
 | 60-second tour | A self-advancing guided walk through the key findings, built for judges. |
 | Blind Clock | When each satellite passes over a region (Pakistan time), the longest unwatched stretch, and how Terra and Aqua are drifting. |
+| Burn Window Advisor | On the Blind Clock tab: whether the district is watched right now, a 24-hour strip of the four satellites still flying, and the best hours for field checks. |
+| Industrial heat | Year-round hot spots (the same 1 km cell hot on 60+ days across 8+ months), likely kilns, flares and factories, kept out of the crop-fire record and mapped on their own, with a smog-season filter. |
+| District scorecards | A shareable page and share image for every district and province at /district/<id>: fire rank, this season against the usual, the Suomi NPP blind-spot share and the Trust Score. |
 | Ask BlindSpot | Gemini answers questions from the site's own data via function calling, in English or Urdu. Every number in an answer is checked against the tool results on the server. |
 | Fire history | Month × year heatmap (harmonized or raw), this month vs the historical median, and the harmonization check per satellite era. |
 | Area & export | Click the map or type lat/lon + radius to recompute everything for your own area; download fire events, the daily calendar or a monthly summary as CSV for any date range. |
-| Method | Every step, the calibration test, the limits, and data credits. |
+| Method | Every step, the calibration test (with a matched MODIS vs VIIRS scatter and pixel footprints to scale), the limits, and data credits. |
 
 ## Repository layout
 
@@ -29,6 +32,9 @@ pipeline/            Python data pipeline (run in order)
   02_load.py         read archive zips + API CSVs, normalise, attach districts
   03_harmonize.py    dedup, MODIS-VIIRS matching, FRP calibration, confidence, event fusion
   04_products.py     writes the static JSON the website reads
+  05_industry.py     year-round hot spots -> industry.json
+  06_scorecards.py   per-district scorecards -> web/lib/scorecards.json
+  07_pairs_sample.py matched MODIS/VIIRS pairs for the Method page
   boundaries/        geoBoundaries Pakistan ADM1/ADM2 (CC BY 4.0)
 data/raw/            FIRMS downloads (not committed)
 data/processed/      parquet outputs (not committed)
@@ -48,6 +54,9 @@ python 01_download.py --all-history   # optional: 2000-2023 history (slow, rate 
 python 02_load.py
 python 03_harmonize.py
 python 04_products.py           # writes web/public/data/
+python 05_industry.py
+python 06_scorecards.py
+python 07_pairs_sample.py
 ```
 
 ## Run the website
