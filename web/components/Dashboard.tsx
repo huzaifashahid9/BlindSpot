@@ -276,6 +276,12 @@ export default function Dashboard() {
               ))}
             </select>
             <PlaceSearch
+              areas={(regions?.regions ?? []).filter((r) => r.level !== "country").map((r) => ({ id: r.id, name: r.name, level: r.level }))}
+              onRegion={(id) => {
+                setCustom(null);
+                setRegionId(id);
+                if (tab === "area" || tab === "ask") go("calendar");
+              }}
               onPick={(h) => {
                 setPlaceName(h.name);
                 setCustom({ lat: Math.round(h.lat * 1e4) / 1e4, lon: Math.round(h.lon * 1e4) / 1e4, km: 15 });
