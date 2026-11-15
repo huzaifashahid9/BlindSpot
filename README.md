@@ -2,9 +2,11 @@
 
 **One fire record from two satellite families, and an honest map of what it misses.**
 
-NASA Space Apps Challenge 2026 · *Harmonization of MODIS and VIIRS Hot Spots* · Pakistan
+NASA Space Apps Challenge 2026 · *Harmonization of MODIS and VIIRS Hot Spots* · Team Hexabytes · Pakistan
 
-On 2 November 2026 NASA stopped Suomi NPP fire data. BlindSpot fuses MODIS (Terra, Aqua) and VIIRS 375 m (Suomi NPP, NOAA-20, NOAA-21) detections into one harmonized record of fire events for Pakistan, then shows what that record lost: **22.9% of Pakistan's fire events from Nov 2023 to Nov 2026 were seen only by Suomi NPP.**
+**Live site:** https://blindspot-web-nine.vercel.app (free, no login)
+
+On 2 November 2026 NASA stopped Suomi NPP fire data. BlindSpot fuses MODIS (Terra, Aqua) and VIIRS 375 m (Suomi NPP, NOAA-20, NOAA-21) detections into one harmonized record of fire events for Pakistan, then shows what that record lost: **23.3% of Pakistan's fire events from Nov 2023 to Nov 2026 (67,288 fires) were seen only by Suomi NPP**, up to 28% in Faisalabad and Toba Tek Singh.
 
 ## What's on the site
 
@@ -19,10 +21,10 @@ On 2 November 2026 NASA stopped Suomi NPP fire data. BlindSpot fuses MODIS (Terr
 | Burn Window Advisor | On the Blind Clock tab: whether the district is watched right now, a 24-hour strip of the four satellites still flying, and the best hours for field checks. |
 | Industrial heat | Year-round hot spots (the same 1 km cell hot on 60+ days across 8+ months), likely kilns, flares and factories, kept out of the crop-fire record and mapped on their own, with a smog-season filter. |
 | District scorecards | A shareable page and share image for every district and province at /district/<id>: fire rank, this season against the usual, the Suomi NPP blind-spot share and the Trust Score. |
-| Ask BlindSpot | Gemini answers questions from the site's own data via function calling, in English or Urdu. Every number in an answer is checked against the tool results on the server. |
+| BlindSpot AI | Gemini answers questions from the site's own data via function calling, in English or Urdu. Every number in an answer is checked against the tool results on the server. |
 | Fire history | Month × year heatmap (harmonized or raw), this month vs the historical median, and the harmonization check per satellite era. |
 | Area & export | Click the map or type lat/lon + radius to recompute everything for your own area; download fire events, the daily calendar or a monthly summary as CSV for any date range. |
-| Method | Every step, the calibration test (with a matched MODIS vs VIIRS scatter and pixel footprints to scale), the limits, and data credits. |
+| How it works | Every step, the calibration test (with a matched MODIS vs VIIRS scatter and pixel footprints to scale), the limits, and data credits. |
 
 ## Repository layout
 
@@ -34,7 +36,7 @@ pipeline/            Python data pipeline (run in order)
   04_products.py     writes the static JSON the website reads
   05_industry.py     year-round hot spots -> industry.json
   06_scorecards.py   per-district scorecards -> web/lib/scorecards.json
-  07_pairs_sample.py matched MODIS/VIIRS pairs for the Method page
+  07_pairs_sample.py matched MODIS/VIIRS pairs for the How it works page
   boundaries/        geoBoundaries Pakistan ADM1/ADM2 (CC BY 4.0)
 data/raw/            FIRMS downloads (not committed)
 data/processed/      parquet outputs (not committed)
@@ -64,29 +66,29 @@ python 07_pairs_sample.py
 ```bash
 cd web
 npm install
-cp .env.example .env.local      # GEMINI_API_KEY for Ask BlindSpot
+cp .env.example .env.local      # GEMINI_API_KEY, FIRMS_MAP_KEY, GOOGLE_MAPS_API_KEY
 npm run dev                     # http://localhost:3000
 ```
 
 ### Deploy on Vercel
 
 1. Import the GitHub repo in Vercel and set **Root Directory** to `web`.
-2. Add environment variable `GEMINI_API_KEY` (and `GEMINI_MODEL` only if the default model isn't available on the key).
-3. Deploy. Everything except Ask BlindSpot is static.
+2. Add environment variables `GEMINI_API_KEY` (BlindSpot AI), `FIRMS_MAP_KEY` (Live tab) and `GOOGLE_MAPS_API_KEY` (Google basemaps and place search; without it the site falls back to Esri and NASA GIBS). Add `GEMINI_MODEL` only if the default model isn't available on the key.
+3. Deploy. Everything except BlindSpot AI, the Live tab and Google tiles is static.
 
-The Gemini key stays on the server (`app/api/ask/route.ts`); it is never sent to the browser.
+All keys stay on the server (`app/api/` routes); they are never sent to the browser.
 
 ## Method in short
 
 1. **Dedup** swath-overlap duplicates (same satellite, 10 min, half a pixel).
-2. **Match** Aqua MODIS to VIIRS from the same pass (30 min, half a MODIS pixel): 4,186 pairs.
-3. **Calibrate** MODIS FRP onto the VIIRS scale per pixel-size bin. Time-split test (train before 2025-05-15): bias factor 2.05× → 1.22×.
+2. **Match** Aqua MODIS to VIIRS from the same pass (30 min, half a MODIS pixel): 94,011 pairs.
+3. **Calibrate** MODIS FRP onto the VIIRS scale per pixel-size bin. Time-split test (train before 2025-05-15): bias factor 2.04× → 1.15×.
 4. **Common confidence**: how often each sensor/class is confirmed by another satellite within 1 km and 90 min when one was overhead.
 5. **Fuse** all detections within 0.75 km on the same Pakistan day into one event; event FRP is the strongest single pass.
 6. **Persistent heat** (kilns, industry, flares): cells active on 30+ days are kept out of the calendar.
-7. **Harmonize counts across eras**: the number of fires recorded depends on which satellites were flying. Inside the 2023–2026 window we learn, per province and month, how many events the full five-satellite constellation records for every event a smaller set (MODIS only, MODIS + Suomi NPP, …) sees. Leave-one-year-out test: MODIS-only monthly error falls from 91% to 26%, MODIS + Suomi NPP from 55% to 8%, today's four satellites from 21% to 3%.
+7. **Harmonize counts across eras**: the number of fires recorded depends on which satellites were flying. Inside the 2023–2026 window we learn, per province and month, how many events the full five-satellite constellation records for every event a smaller set (MODIS only, MODIS + Suomi NPP, …) sees. Leave-one-year-out test, monthly error raw → harmonized: Terra only 97% → 55%, Terra + Aqua 91% → 29%, + Suomi NPP 55% → 7.5%, today's constellation 21% → 3.1%.
 
-Full detail and limits are on the site's Method page.
+Full detail and limits are on the site's How it works page.
 
 ## Data and credits
 
@@ -96,9 +98,9 @@ We acknowledge the use of data and imagery from NASA's Fire Information for Reso
 
 - **Code and text:** much of the Python pipeline and the web app was written and debugged with an SI coding assistant (Anthropic Claude), directed and checked by the team. Commit history and this note are the record of that.
 - **Logo and slide deck:** the BlindSpot logo (an SVG drawn in code) and the slide layouts were designed with SI assistance.
-- **Inside the product:** Ask BlindSpot AI uses Google Gemini through function calling over this site's data, with a server-side check that every number in a reply appears in the data.
+- **Inside the product:** BlindSpot AI uses Google Gemini through function calling over this site's data, with a server-side check that every number in a reply appears in the data.
 - **Not SI-generated:** every map, chart and figure is drawn by our code from NASA data.
 
-## Team
+## Team Hexabytes
 
 Huzaifa Shahid · Muneeb Mustafa · Ashar Raza
